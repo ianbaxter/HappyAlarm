@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Simple Alarm</string>
+    <string name="alarm_on_message">Alarm is on</string>
+    <string name="alarm_off_message">Alarm is off</string>
+    <string name="alarm_set_message">Alarm has been set</string>
+    <string name="alarm_turned_off_message">Alarm turned off</string>
+    <string name="alarm_sounding_message">Alarm sounding</string>
+    
+    <string name="alarm_time_key">12:00</string>
+    <string name="alarm_state_key"></string>
+</resources>
