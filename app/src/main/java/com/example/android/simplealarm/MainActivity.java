@@ -1,162 +1,143 @@
 package com.example.android.simplealarm;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
-import java.util.Calendar;
+import com.example.android.simplealarm.database.AlarmEntry;
+import com.example.android.simplealarm.database.AppDatabase;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity
+        implements AlarmAdapter.ListItemClickListener,
+        SetTimeFragment.TimeDialogListener {
+
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final String TIME_PICKER_FRAGMENT_ID = "timePicker";
-    private static final String LIFECYCLE_CALLBACKS_ALARM_STATE_KEY = "alarmState";
-    private static final String LIFECYCLE_CALLBACKS_ALARM_TIME_KEY = "alarmTime";
+    private static final String CLICKED_ITEM_INDEX_KEY = "clickedItemIndex";
 
-    protected static Button mAlarmTime;
-    protected static Button mAlarmClock;
-    protected static Button mAlarmOff;
-
-    protected static boolean alarmIsOn = false;
-    protected static Toast mToast;
-    private MyAlarm mAlarm;
+    private AlarmAdapter mAdaptor;
+    private AppDatabase mDb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        RecyclerView recyclerView = findViewById(R.id.my_recycler_view);
 
-        mAlarm = new MyAlarm();
+        // set size of RecyclerView to be fixed as changes of content will not change the layout size of the RecyclerView
+        recyclerView.setHasFixedSize(true);
 
-        mAlarmTime = findViewById(R.id.alarmTime);
-        mAlarmClock = findViewById(R.id.clock);
-        mAlarmClock.setOnClickListener(this);
-        mAlarmOff = findViewById(R.id.alarmOff);
-        mAlarmOff.setOnClickListener(this);
-        MainActivity.mAlarmOff.setVisibility(View.INVISIBLE);
+        // use a linear layout manager
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
 
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-
-        String defaultAlarmTimeValue = getResources().getString(R.string.alarm_time_key);
-        String savedAlarmTimeValue = sharedPref.getString(getString(R.string.alarm_time_key), defaultAlarmTimeValue);
-        mAlarmTime.setText(savedAlarmTimeValue);
-
-        boolean savedAlarmStateValue = sharedPref.getBoolean(getString(R.string.alarm_state_key), false);
-        alarmIsOn = savedAlarmStateValue;
-
-        /*if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(LIFECYCLE_CALLBACKS_ALARM_STATE_KEY)) {
-                alarmIsOn = savedInstanceState.getBoolean(LIFECYCLE_CALLBACKS_ALARM_STATE_KEY);
+        // initialise mFab and set OnClickListener
+        FloatingActionButton mFab = findViewById(R.id.fab_add_alarm);
+        mFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showNewTimePickerDialog(view);
             }
-            if (savedInstanceState.containsKey(LIFECYCLE_CALLBACKS_ALARM_TIME_KEY)) {
-                String previousLifecycleAlarmTimeCallbacks = savedInstanceState.getString(LIFECYCLE_CALLBACKS_ALARM_TIME_KEY);
-                mAlarmTime.setText(previousLifecycleAlarmTimeCallbacks);
-            }
-        }*/
+        });
 
-        showAlarm(alarmIsOn);
+        // specify an adaptor
+        mAdaptor = new AlarmAdapter(this, this);
+        recyclerView.setAdapter(mAdaptor);
+
+        // Add a touch helper to the RecyclerView to recognise when the user swipes a ViewHolder.
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull final RecyclerView.ViewHolder viewHolder, int swipeDirection) {
+                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        int position = viewHolder.getAdapterPosition();
+                        List<AlarmEntry> alarmEntries = mAdaptor.getTasks();
+                        mDb.alarmDao().deleteAlarm(alarmEntries.get(position));
+                    }
+                });
+            }
+        }).attachToRecyclerView(recyclerView);
+
+        mDb = AppDatabase.getInstance(getApplicationContext());
+        setupViewModel();
     }
 
-    /*@Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean(LIFECYCLE_CALLBACKS_ALARM_STATE_KEY, alarmIsOn);
-        String lifecycleAlarmTime = mAlarmTime.getText().toString();
-        outState.putString(LIFECYCLE_CALLBACKS_ALARM_TIME_KEY, lifecycleAlarmTime);
-    }*/
+    private void setupViewModel() {
+        MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+        viewModel.getAlarms().observe(this, new Observer<List<AlarmEntry>>() {
+            @Override
+            public void onChanged(@Nullable List<AlarmEntry> alarmEntries) {
+                Log.d(TAG, "Updating the list of alarms from LiveData in ViewModel");
+                mAdaptor.setTasks(alarmEntries);
+            }
+        });
+    }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(getString(R.string.alarm_time_key), mAlarmTime.getText().toString());
-        editor.putBoolean(getString(R.string.alarm_state_key), alarmIsOn);
-        editor.apply();
+    public void onAlarmClick(final int clickedItemIndex) {
+        View view = findViewById(R.id.button_alarm_time);
+        showAndUpdateTimePickerDialog(view, clickedItemIndex);
+//        Toast.makeText(this, "Position: " + clickedItemIndex, Toast.LENGTH_LONG).show();
     }
 
-    @Override
-    public void onClick(View view) {
-        int id = view.getId();
-
-        switch (id) {
-            case R.id.clock:
-                if (!alarmIsOn) {
-                    mAlarmClock.setBackgroundResource(R.drawable.clock_on);
-                    mToast.makeText(this, R.string.alarm_on_message, Toast.LENGTH_LONG).show();
-                    alarmIsOn = true;
-
-                    triggerAlarm();
-
-                } else if (alarmIsOn) {
-                    mAlarmClock.setBackgroundResource(R.drawable.clock_off);
-                    mToast.makeText(this, R.string.alarm_off_message, Toast.LENGTH_LONG).show();
-                    alarmIsOn = false;
-
-                    mAlarm.cancel();
-                }
-                break;
-
-            case R.id.alarmOff :
-                if (mAlarm.alarmRinging) {
-                    mToast.makeText(this, R.string.alarm_turned_off_message, Toast.LENGTH_LONG).show();
-                    mAlarm.stopAlarm();
-                }
-                break;
-        }
-    }
-
-    public void showTimePickerDialog(View view) {
+    public void showNewTimePickerDialog(View view) {
         DialogFragment newFragment = new SetTimeFragment();
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
-
-        mToast.makeText(this, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
     }
 
-    private void showAlarm(boolean alarmState) {
-        if (!alarmIsOn) {
-            mAlarmClock.setBackgroundResource(R.drawable.clock_off);
-        } else if (alarmIsOn) {
-            mAlarmClock.setBackgroundResource(R.drawable.clock_on);
-        }
+    public void showAndUpdateTimePickerDialog(View view, int clickedItemIndex) {
+        DialogFragment newFragment = new SetTimeFragment();
+        Bundle bundle = new Bundle();
+        bundle.putInt(CLICKED_ITEM_INDEX_KEY, clickedItemIndex);
+        newFragment.setArguments(bundle);
+        newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
     }
 
-    private void triggerAlarm() {
-        // Convert hours and minutes from time picker button to integer values and calculate time of alarm in milliseconds (from midnight)
-        String alarmTime = mAlarmTime.getText().toString();
-        String[] hoursAndMinutes = alarmTime.split(":");
-        String hoursString = hoursAndMinutes[0];
-        String minutesString = hoursAndMinutes[1];
-        int hours = Integer.parseInt(hoursString);
-        int minutes = Integer.parseInt(minutesString);
-        long alarmTimeInMillis = hours * 3600000 + minutes * 60000;
+    @Override
+    public void onFinishNewTimeDialog(String time) {
+        final AlarmEntry alarmEntry = new AlarmEntry(time, false);
+        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                mDb.alarmDao().insertAlarm(alarmEntry);
+            }
+        });
+    }
 
-        // Calculate time from midnight in milliseconds
-        Calendar c = Calendar.getInstance();
-        long currentTimeInMillis = c.getTimeInMillis();
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        long timePassedSinceMidnightInMillis = currentTimeInMillis - c.getTimeInMillis();
-
-        // Calculate time until alarm in seconds
-        long timeUntilAlarmInMillis = alarmTimeInMillis - timePassedSinceMidnightInMillis;
-        if (timeUntilAlarmInMillis < 0) {
-            timeUntilAlarmInMillis = 24 * 3600000 + timeUntilAlarmInMillis;
-        }
-        int timeUntilAlarmInSeconds = (int) (timeUntilAlarmInMillis / 1000);
-
-        mAlarm = new MyAlarm(this, null, timeUntilAlarmInSeconds);
+    @Override
+    public void onFinishUpdateTimeDialog(final String time, final int clickedItemIndex) {
+        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(clickedItemIndex);
+                alarmEntry.setTime(time);
+                // Check if alarm is already on and turn on if not
+                boolean alarmIsOn = alarmEntry.getAlarmIsOn();
+                if (!alarmIsOn) {
+                    alarmEntry.setAlarmIsOn(true);
+                }
+                mDb.alarmDao().updateAlarm(alarmEntry);
+            }
+        });
     }
 }
-
-
-
-
-

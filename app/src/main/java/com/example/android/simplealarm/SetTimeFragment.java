@@ -7,16 +7,26 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.widget.TimePicker;
+
 import java.util.Calendar;
 
 public class SetTimeFragment extends DialogFragment implements TimePickerDialog.OnTimeSetListener {
 
+    // Member variable for the database
+    private int clickedItemIndex;
+    private boolean newAlarm = true;
+
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        final Calendar c = Calendar.getInstance();
-        int hour = c.get(Calendar.HOUR_OF_DAY);
-        int minute = c.get(Calendar.MINUTE);
+        final Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        if (getArguments() != null && getArguments().containsKey("clickedItemIndex")) {
+            clickedItemIndex = getArguments().getInt("clickedItemIndex");
+            newAlarm = false;
+        }
 
         return new TimePickerDialog(getActivity(),
                 this, hour, minute, true);
@@ -24,13 +34,25 @@ public class SetTimeFragment extends DialogFragment implements TimePickerDialog.
 
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        // Do something with the time chosen by the user
+        String time;
         if (minute < 10) {
-            String time = hourOfDay + ":0" + minute;
-            MainActivity.mAlarmTime.setText(time);
+            time = hourOfDay + ":0" + minute;
         } else {
-            String time = hourOfDay + ":" + minute;
-            MainActivity.mAlarmTime.setText(time);
+            time = hourOfDay + ":" + minute;
         }
+
+        TimeDialogListener listener = (TimeDialogListener) getActivity();
+        if (listener != null) {
+            if (newAlarm) {
+                listener.onFinishNewTimeDialog(time);
+            } else {
+                listener.onFinishUpdateTimeDialog(time, clickedItemIndex);
+            }
+        }
+    }
+
+    public interface TimeDialogListener {
+        void onFinishNewTimeDialog(String time);
+        void onFinishUpdateTimeDialog(String time, int clickedItemIndex);
     }
 }
