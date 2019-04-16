@@ -1,4 +1,4 @@
-package com.example.android.simplealarm;
+package com.example.android.simplealarm.viewmodels;
 
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;

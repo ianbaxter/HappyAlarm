@@ -1,10 +1,10 @@
 package com.example.android.simplealarm;
 
+import android.app.Activity;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,10 +13,14 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
+import com.example.android.simplealarm.viewmodels.MainViewModel;
 
 import java.util.List;
 
@@ -28,6 +32,7 @@ public class MainActivity extends AppCompatActivity
 
     private static final String TIME_PICKER_FRAGMENT_ID = "timePicker";
     private static final String CLICKED_ITEM_INDEX_KEY = "clickedItemIndex";
+    private static final String CLICKED_ITEM_POSITION_KEY = "clickedItemPosition";
 
     private AlarmAdapter mAdaptor;
     private AppDatabase mDb;
@@ -44,15 +49,6 @@ public class MainActivity extends AppCompatActivity
         // use a linear layout manager
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
-
-        // initialise mFab and set OnClickListener
-        FloatingActionButton mFab = findViewById(R.id.fab_add_alarm);
-        mFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showNewTimePickerDialog(view);
-            }
-        });
 
         // specify an adaptor
         mAdaptor = new AlarmAdapter(this, this);
@@ -71,8 +67,14 @@ public class MainActivity extends AppCompatActivity
                     @Override
                     public void run() {
                         int position = viewHolder.getAdapterPosition();
-                        List<AlarmEntry> alarmEntries = mAdaptor.getTasks();
-                        mDb.alarmDao().deleteAlarm(alarmEntries.get(position));
+                        List<AlarmEntry> alarmEntries = AlarmAdapter.getTasks();
+                        AlarmEntry alarmEntry = alarmEntries.get(position);
+                        // Cancel PendingIntent for deleted alarm if alarmIsOn
+                        if (alarmEntry.getAlarmIsOn()) {
+                            int alarmEntryId = alarmEntry.getId();
+                            AlarmReceiver.cancelAlarm(getApplicationContext(), alarmEntryId);
+                        }
+                        mDb.alarmDao().deleteAlarm(alarmEntry);
                     }
                 });
             }
@@ -94,10 +96,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onAlarmClick(final int clickedItemIndex) {
-        View view = findViewById(R.id.button_alarm_time);
-        showAndUpdateTimePickerDialog(view, clickedItemIndex);
-//        Toast.makeText(this, "Position: " + clickedItemIndex, Toast.LENGTH_LONG).show();
+    public void onAlarmClick(int adapterPosition, int clickedItemIndex) {
+        showAndUpdateTimePickerDialog(adapterPosition, clickedItemIndex);
+        Toast.makeText(this, "Position: " + clickedItemIndex, Toast.LENGTH_LONG).show();
     }
 
     public void showNewTimePickerDialog(View view) {
@@ -105,9 +106,10 @@ public class MainActivity extends AppCompatActivity
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
     }
 
-    public void showAndUpdateTimePickerDialog(View view, int clickedItemIndex) {
+    public void showAndUpdateTimePickerDialog(int adapterPosition, int clickedItemIndex) {
         DialogFragment newFragment = new SetTimeFragment();
         Bundle bundle = new Bundle();
+        bundle.putInt(CLICKED_ITEM_POSITION_KEY, adapterPosition);
         bundle.putInt(CLICKED_ITEM_INDEX_KEY, clickedItemIndex);
         newFragment.setArguments(bundle);
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
@@ -122,6 +124,7 @@ public class MainActivity extends AppCompatActivity
                 mDb.alarmDao().insertAlarm(alarmEntry);
             }
         });
+
     }
 
     @Override
@@ -130,11 +133,17 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void run() {
                 AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(clickedItemIndex);
+                int alarmEntryId = alarmEntry.getId();
                 alarmEntry.setTime(time);
                 // Check if alarm is already on and turn on if not
                 boolean alarmIsOn = alarmEntry.getAlarmIsOn();
                 if (!alarmIsOn) {
                     alarmEntry.setAlarmIsOn(true);
+                } else {
+                    AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
+                    AlarmAdapter.setAlarm(MainActivity.this, alarmEntry);
+                    // Toast here causing Error: Can't toast on a thread that has not called Looper.prepare()
+//                    Toast.makeText(MainActivity.this, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
                 }
                 mDb.alarmDao().updateAlarm(alarmEntry);
             }

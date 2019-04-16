@@ -1,4 +1,4 @@
-package com.example.android.simplealarm;
+package com.example.android.simplealarm.adapters;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -12,6 +12,9 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import com.example.android.simplealarm.AlarmReceiver;
+import com.example.android.simplealarm.AppExecutors;
+import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 
@@ -26,12 +29,11 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     final private ListItemClickListener mOnClickListener;
 
     // Class variables for the list that holds task data and the context
-    private List<AlarmEntry> mAlarmEntries;
+    private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
 
     // Member variable for the database
     private AppDatabase mDb;
-    private AlarmReceiver mAlarmReceiver;
 
     private static final String TAG = AlarmAdapter.class.getSimpleName();
 
@@ -50,7 +52,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
      * Add interface for ClickListener
      */
     public interface ListItemClickListener {
-        void onAlarmClick(int itemId);
+        void onAlarmClick(int adapterPosition, int itemId);
     }
 
     // Inner class for creating ViewHolders
@@ -74,8 +76,9 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
 
         @Override
         public void onClick(View view) {
+            int adapterPosition = getAdapterPosition();
             int elementId = mAlarmEntries.get(getAdapterPosition()).getId();
-            mOnClickListener.onAlarmClick(elementId);
+            mOnClickListener.onAlarmClick(adapterPosition, elementId);
         }
     }
 
@@ -119,11 +122,14 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         holder.alarmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Get position of holder and update alarmEntry
-                int position = holder.getAdapterPosition();
-                final AlarmEntry alarmEntry = mAlarmEntries.get(position);
+                // Get adapterPosition of holder and update alarmEntry
+                int adapterPosition = holder.getAdapterPosition();
+                final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+                Log.i("tag", "adapterPosition is this: " + adapterPosition);
+                int alarmEntryId = alarmEntry.getId();
+                Log.i("tag", "id is this: " + alarmEntryId);
                 alarmEntry.setAlarmIsOn(isChecked);
-                mDb = AppDatabase.getInstance(mContext.getApplicationContext());
+                mDb = AppDatabase.getInstance(mContext);
 
                 AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                     @Override
@@ -134,12 +140,11 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
 
                 if (isChecked) {
                     // Alarm turned on, set alarm
-                    setAlarm(position);
+                    setAlarm(mContext, alarmEntry);
+                    Toast.makeText(mContext, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
                 } else {
                     // Alarm turned off, disable alarm
-                    if (mAlarmReceiver != null) {
-                        mAlarmReceiver.cancelAlarm(buttonView.getContext(), position);
-                    }
+                    AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
                 }
             }
         });
@@ -153,7 +158,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         return mAlarmEntries.size();
     }
 
-    public List<AlarmEntry> getTasks() {
+    public static List<AlarmEntry> getTasks() {
         return mAlarmEntries;
     }
 
@@ -162,14 +167,15 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         notifyDataSetChanged();
     }
 
-    private void setAlarm(int position) {
-        // Get position of holder and alarmTime String
-        AlarmEntry alarmEntry = mAlarmEntries.get(position);
+    public static void setAlarm(Context context, AlarmEntry alarmEntry) {
+        // Get alarm time and id from alarmEntry
         String alarmTime = alarmEntry.getTime();
+        int alarmEntryId = alarmEntry.getId();
+        Log.i(TAG, "Alarm set with id: " + alarmEntryId);
 
-        mAlarmReceiver = new AlarmReceiver(mContext, alarmTime, position);
+        new AlarmReceiver(context, alarmTime, alarmEntryId);
 
         Log.i(TAG, "Alarm set for: " + alarmTime);
-        Toast.makeText(mContext, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
+//        Toast.makeText(mContext, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
     }
 }
