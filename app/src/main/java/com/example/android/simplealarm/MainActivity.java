@@ -1,6 +1,5 @@
 package com.example.android.simplealarm;
 
-import android.app.Activity;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.support.annotation.NonNull;
@@ -13,11 +12,11 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
+
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.simplealarm.adapters.AlarmAdapter;
+import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
@@ -41,7 +40,8 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        RecyclerView recyclerView = findViewById(R.id.my_recycler_view);
+        EmptyRecyclerView recyclerView = findViewById(R.id.my_recycler_view);
+        TextView emptyView = findViewById(R.id.tv_empty_view);
 
         // set size of RecyclerView to be fixed as changes of content will not change the layout size of the RecyclerView
         recyclerView.setHasFixedSize(true);
@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity
         // specify an adaptor
         mAdaptor = new AlarmAdapter(this, this);
         recyclerView.setAdapter(mAdaptor);
+        recyclerView.setEmptyView(emptyView);
 
         // Add a touch helper to the RecyclerView to recognise when the user swipes a ViewHolder.
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity
                         // Cancel PendingIntent for deleted alarm if alarmIsOn
                         if (alarmEntry.getAlarmIsOn()) {
                             int alarmEntryId = alarmEntry.getId();
-                            AlarmReceiver.cancelAlarm(getApplicationContext(), alarmEntryId);
+                            AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
                         }
                         mDb.alarmDao().deleteAlarm(alarmEntry);
                     }
@@ -98,7 +99,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onAlarmClick(int adapterPosition, int clickedItemIndex) {
         showAndUpdateTimePickerDialog(adapterPosition, clickedItemIndex);
-        Toast.makeText(this, "Position: " + clickedItemIndex, Toast.LENGTH_LONG).show();
     }
 
     public void showNewTimePickerDialog(View view) {
@@ -111,6 +111,8 @@ public class MainActivity extends AppCompatActivity
         Bundle bundle = new Bundle();
         bundle.putInt(CLICKED_ITEM_POSITION_KEY, adapterPosition);
         bundle.putInt(CLICKED_ITEM_INDEX_KEY, clickedItemIndex);
+        Log.i(TAG, "it is the adapterPosition" + adapterPosition);
+        Log.i(TAG, "it is the clickedItemIndex" + clickedItemIndex);
         newFragment.setArguments(bundle);
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
     }
@@ -124,11 +126,11 @@ public class MainActivity extends AppCompatActivity
                 mDb.alarmDao().insertAlarm(alarmEntry);
             }
         });
-
     }
 
     @Override
     public void onFinishUpdateTimeDialog(final String time, final int clickedItemIndex) {
+        Log.i(TAG, "time and clickedItemIndex are: " + time + "   " + clickedItemIndex);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
@@ -140,10 +142,9 @@ public class MainActivity extends AppCompatActivity
                 if (!alarmIsOn) {
                     alarmEntry.setAlarmIsOn(true);
                 } else {
+                    // Cancel previous alarm and set new alarm
                     AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
-                    AlarmAdapter.setAlarm(MainActivity.this, alarmEntry);
-                    // Toast here causing Error: Can't toast on a thread that has not called Looper.prepare()
-//                    Toast.makeText(MainActivity.this, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
+                    new AlarmReceiver(MainActivity.this, alarmEntry);
                 }
                 mDb.alarmDao().updateAlarm(alarmEntry);
             }

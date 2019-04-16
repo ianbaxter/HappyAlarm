@@ -3,14 +3,12 @@ package com.example.android.simplealarm.adapters;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.AppExecutors;
@@ -31,9 +29,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     // Class variables for the list that holds task data and the context
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
-
-    // Member variable for the database
-    private AppDatabase mDb;
 
     private static final String TAG = AlarmAdapter.class.getSimpleName();
 
@@ -77,8 +72,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         @Override
         public void onClick(View view) {
             int adapterPosition = getAdapterPosition();
-            int elementId = mAlarmEntries.get(getAdapterPosition()).getId();
-            mOnClickListener.onAlarmClick(adapterPosition, elementId);
+            int alarmEntryId = mAlarmEntries.get(getAdapterPosition()).getId();
+            mOnClickListener.onAlarmClick(adapterPosition, alarmEntryId);
         }
     }
 
@@ -119,33 +114,34 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         holder.alarmSwitch.setChecked(alarmState);
 
         // Set OnCheckedChangeListener to alarmSwitch
+        /**
+         * Issue with code below - cannot make above member variables final for use in inner classes below as it breaks the alarm system
+         */
         holder.alarmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 // Get adapterPosition of holder and update alarmEntry
                 int adapterPosition = holder.getAdapterPosition();
                 final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
-                Log.i("tag", "adapterPosition is this: " + adapterPosition);
                 int alarmEntryId = alarmEntry.getId();
-                Log.i("tag", "id is this: " + alarmEntryId);
+                String time = alarmEntry.getTime();
                 alarmEntry.setAlarmIsOn(isChecked);
-                mDb = AppDatabase.getInstance(mContext);
+
+                if (isChecked) {
+                    // MyAlarm turned on, set alarm
+                    new AlarmReceiver(mContext, alarmEntry);
+                } else {
+                    // MyAlarm turned off, disable alarm
+                    AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
+                }
 
                 AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                     @Override
                     public void run() {
+                        AppDatabase mDb = AppDatabase.getInstance(mContext);
                         mDb.alarmDao().updateAlarm(alarmEntry);
                     }
                 });
-
-                if (isChecked) {
-                    // Alarm turned on, set alarm
-                    setAlarm(mContext, alarmEntry);
-                    Toast.makeText(mContext, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
-                } else {
-                    // Alarm turned off, disable alarm
-                    AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
-                }
             }
         });
     }
@@ -166,16 +162,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         mAlarmEntries = alarmEntries;
         notifyDataSetChanged();
     }
-
-    public static void setAlarm(Context context, AlarmEntry alarmEntry) {
-        // Get alarm time and id from alarmEntry
-        String alarmTime = alarmEntry.getTime();
-        int alarmEntryId = alarmEntry.getId();
-        Log.i(TAG, "Alarm set with id: " + alarmEntryId);
-
-        new AlarmReceiver(context, alarmTime, alarmEntryId);
-
-        Log.i(TAG, "Alarm set for: " + alarmTime);
-//        Toast.makeText(mContext, R.string.alarm_set_message, Toast.LENGTH_LONG).show();
-    }
 }
+
+

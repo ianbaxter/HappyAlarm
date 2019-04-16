@@ -45,7 +45,7 @@ public class NotificationUtils {
                 new NotificationCompat.Builder(context, ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID)
                         .setSmallIcon(R.drawable.outline_alarm_black_48)
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
-                        .setContentText("Alarm at")
+                        .setContentText("MyAlarm at")
 //                        .setContentIntent(contentIntent(context))
                         .addAction(stopAlarmAction(context))
                         .setAutoCancel(true);
@@ -79,7 +79,7 @@ public class NotificationUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         return new NotificationCompat.Action((R.drawable.outline_alarm_off_black_48),
-                "Stop Alarm",
+                "Stop MyAlarm",
                 stopAlarmPendingIntent);
     }
 }
