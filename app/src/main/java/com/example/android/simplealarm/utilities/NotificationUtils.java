@@ -8,19 +8,17 @@ import android.content.Intent;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
-import com.example.android.simplealarm.MainActivity;
+import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.sync.AlarmIntentService;
 import com.example.android.simplealarm.sync.AlarmTasks;
 
 public class NotificationUtils {
 
-    private static final int ALARM_SOUNDING_PENDING_INTENT_ID = 9000;
-
     private static final int ALARM_SOUNDING_NOTIFICATION_ID = 9001;
-
     private static final int ACTION_STOP_ALARM_PENDING_INTENT_ID = 9002;
 
+    private static final String ALARM_DISMISSED_NOTIFICATION_ID = "alarm_dismissed_notification";
     private static final String ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID = "alarm_sounding_notification_channel";
 
     public static void clearAllNotifications(Context context) {
@@ -45,9 +43,9 @@ public class NotificationUtils {
                 new NotificationCompat.Builder(context, ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID)
                         .setSmallIcon(R.drawable.outline_alarm_black_48)
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
-                        .setContentText("MyAlarm at")
-//                        .setContentIntent(contentIntent(context))
+                        .setContentText("Buzz Buzz")
                         .addAction(stopAlarmAction(context))
+                        .setDeleteIntent(onDismissedIntent(context, ALARM_SOUNDING_NOTIFICATION_ID))
                         .setAutoCancel(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             notificationBuilder.setPriority(NotificationManager.IMPORTANCE_HIGH);
@@ -56,14 +54,12 @@ public class NotificationUtils {
         notificationManager.notify(ALARM_SOUNDING_NOTIFICATION_ID, notificationBuilder.build());
     }
 
-    private static PendingIntent contentIntent(Context context) {
-        Intent startActivityIntent = new Intent(context, MainActivity.class);
+    private static PendingIntent onDismissedIntent(Context context, int notificationId) {
+        Intent intent = new Intent(context, AlarmReceiver.class);
+        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_ID, notificationId);
 
-        return PendingIntent.getActivity(
-                context,
-                ALARM_SOUNDING_PENDING_INTENT_ID,
-                startActivityIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+        return PendingIntent.getBroadcast(context.getApplicationContext(),
+                notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     private static NotificationCompat.Action stopAlarmAction(Context context) {
@@ -79,7 +75,7 @@ public class NotificationUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         return new NotificationCompat.Action((R.drawable.outline_alarm_off_black_48),
-                "Stop MyAlarm",
+                "Dismiss",
                 stopAlarmPendingIntent);
     }
 }

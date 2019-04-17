@@ -14,11 +14,13 @@ import android.util.Log;
 import android.view.View;
 
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
+import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
 
 import java.util.List;
@@ -111,8 +113,6 @@ public class MainActivity extends AppCompatActivity
         Bundle bundle = new Bundle();
         bundle.putInt(CLICKED_ITEM_POSITION_KEY, adapterPosition);
         bundle.putInt(CLICKED_ITEM_INDEX_KEY, clickedItemIndex);
-        Log.i(TAG, "it is the adapterPosition" + adapterPosition);
-        Log.i(TAG, "it is the clickedItemIndex" + clickedItemIndex);
         newFragment.setArguments(bundle);
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
     }
@@ -130,7 +130,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onFinishUpdateTimeDialog(final String time, final int clickedItemIndex) {
-        Log.i(TAG, "time and clickedItemIndex are: " + time + "   " + clickedItemIndex);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
@@ -147,7 +146,12 @@ public class MainActivity extends AppCompatActivity
                     new AlarmReceiver(MainActivity.this, alarmEntry);
                 }
                 mDb.alarmDao().updateAlarm(alarmEntry);
+                Log.i(TAG, "alarmEntry time is:" + alarmEntry.getTime());
             }
         });
+        String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
+        Toast.makeText(this, this.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
     }
 }
+
+

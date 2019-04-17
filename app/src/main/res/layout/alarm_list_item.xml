@@ -20,17 +20,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
+    <!--<CheckBox
         android:id="@+id/image_clock"
         android:layout_width="70dp"
         android:layout_height="70dp"
-        android:src="@drawable/outline_alarm_black_48"
+        android:layout_marginEnd="32dp"
+        android:layout_marginRight="32dp"
+        android:contentDescription="Test"
+        android:src="@drawable/outline_repeat_black_48"
+        android:background="@android:color/transparent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/switch_alarm"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:contentDescription="TODO" />
-
+        app:layout_constraintEnd_toStartOf="@+id/switch_alarm"
+        app:layout_constraintTop_toTopOf="parent" />
+-->
     <Switch
         android:id="@+id/switch_alarm"
         android:layout_width="wrap_content"

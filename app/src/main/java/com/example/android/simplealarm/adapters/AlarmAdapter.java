@@ -9,12 +9,14 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.AppExecutors;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
+import com.example.android.simplealarm.utilities.AlarmUtils;
 
 import java.util.List;
 
@@ -114,9 +116,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         holder.alarmSwitch.setChecked(alarmState);
 
         // Set OnCheckedChangeListener to alarmSwitch
-        /**
-         * Issue with code below - cannot make above member variables final for use in inner classes below as it breaks the alarm system
-         */
         holder.alarmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -130,6 +129,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                 if (isChecked) {
                     // MyAlarm turned on, set alarm
                     new AlarmReceiver(mContext, alarmEntry);
+                    String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
+                    Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
                 } else {
                     // MyAlarm turned off, disable alarm
                     AlarmReceiver.cancelAlarm(mContext, alarmEntryId);

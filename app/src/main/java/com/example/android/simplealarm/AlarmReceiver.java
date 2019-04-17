@@ -8,13 +8,11 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
+import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.utilities.NotificationUtils;
-
-import java.util.Calendar;
 
 public class AlarmReceiver extends BroadcastReceiver {
 
@@ -40,74 +38,54 @@ public class AlarmReceiver extends BroadcastReceiver {
 
         // Determine time until alarm
         String alarmEntryTime = alarmEntry.getTime();
-        Log.i(TAG, "MyAlarm set for: " + alarmEntryTime);
-        String[] hoursAndMinutes = alarmEntryTime.split(":");
-        String hoursString = hoursAndMinutes[0];
-        String minutesString = hoursAndMinutes[1];
-        int hours = Integer.parseInt(hoursString);
-        int minutes = Integer.parseInt(minutesString);
+        long alarmTimeInMillis = AlarmUtils.getAlarmTimeInMillis(alarmEntryTime);
 
-        // Alternate way of calculating time until alarm
-        long alarmTimeInMillis = hours * 3600000 + minutes * 60000;
-        // Calculate time at midnight in milliseconds
-        Calendar c = Calendar.getInstance();
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        long timeAtMidnightInMillis = c.getTimeInMillis();
-        long ExactAlarmTimeInMillis = alarmTimeInMillis + timeAtMidnightInMillis;
-
+        // Set alarm on alarmManager
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, ExactAlarmTimeInMillis, pendingIntent);
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, pendingIntent);
         } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, ExactAlarmTimeInMillis, pendingIntent);
+            alarmManager.set(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, pendingIntent);
         }
-        Toast.makeText(context, context.getString(R.string.alarm_set_message) + ": " + alarmEntryTime, Toast.LENGTH_LONG).show();
     }
 
-    /**
-     * Do code when broadcast receiver receives.
-     *
-     * @param context
-     *
-     * @param intent
-     */
     @Override
     public void onReceive(final Context context, Intent intent) {
-        NotificationUtils.alarmSoundingNotification(context);
+        if (intent.getExtras() != null && intent.hasExtra("alarm_dismissed_notification")) {
+            stopAlarm();
+        } else {
+            NotificationUtils.alarmSoundingNotification(context);
 
-        mediaPlayer = MediaPlayer.create(context, R.raw.alarm1);
-        mediaPlayer.setLooping(false);
-        mediaPlayer.start();
+            mediaPlayer = MediaPlayer.create(context, R.raw.alarm1);
+            mediaPlayer.setLooping(false);
+            mediaPlayer.start();
 
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mediaPlayer) {
-                mediaPlayer.release();
-                NotificationUtils.clearAllNotifications(context);
-            }
-        });
-
-        // Set alarmIsOn to false after corresponding alarm has been triggered
-        if (intent != null && intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
-            final int itemIndex = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
-            Log.i("test", "id intent was:" + itemIndex);
-
-            final AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-
-            AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+            mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override
-                public void run() {
-                    AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(itemIndex);
-                    // Check if alarm is already on and turn on if not
-                    if (alarmEntry.getAlarmIsOn()) {
-                        alarmEntry.setAlarmIsOn(false);
-                        mDb.alarmDao().updateAlarm(alarmEntry);
-                    }
+                public void onCompletion(MediaPlayer mediaPlayer) {
+                    mediaPlayer.release();
+                    NotificationUtils.clearAllNotifications(context);
                 }
             });
+
+            // Set alarmIsOn to false after corresponding alarm has been triggered
+            if (intent != null && intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
+                final int itemIndex = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                Log.i("test", "id intent was:" + itemIndex);
+
+                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                        AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(itemIndex);
+                        // Check if alarm is already on and turn on if not
+                        if (alarmEntry.getAlarmIsOn()) {
+                            alarmEntry.setAlarmIsOn(false);
+                            mDb.alarmDao().updateAlarm(alarmEntry);
+                        }
+                    }
+                });
+            }
         }
     }
 
