@@ -18,8 +18,9 @@ public class NotificationUtils {
     private static final int ALARM_SOUNDING_NOTIFICATION_ID = 9001;
     private static final int ACTION_STOP_ALARM_PENDING_INTENT_ID = 9002;
 
-    private static final String ALARM_DISMISSED_NOTIFICATION_ID = "alarm_dismissed_notification";
-    private static final String ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID = "alarm_sounding_notification_channel";
+    private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
+    private static final String ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY = "alarm_sounding_notification_channel";
+    private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
 
     public static void clearAllNotifications(Context context) {
         NotificationManager notificationManager = (NotificationManager)
@@ -27,25 +28,25 @@ public class NotificationUtils {
         notificationManager.cancelAll();
     }
 
-    public static void alarmSoundingNotification(Context context) {
+    public static void alarmSoundingNotification(Context context, int alarmEntryId) {
         NotificationManager notificationManager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             NotificationChannel mChannel = new NotificationChannel(
-                    ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID,
+                    ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY,
                     context.getString(R.string.alarm_notification_channel_name),
                     NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(mChannel);
         }
 
         NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(context, ALARM_SOUNDING_NOTIFICATION_CHANNEL_ID)
+                new NotificationCompat.Builder(context, ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY)
                         .setSmallIcon(R.drawable.outline_alarm_black_48)
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
-                        .setContentText("Buzz Buzz")
+                        .setContentText("Swipe to snooze for 5 minutes")
                         .addAction(stopAlarmAction(context))
-                        .setDeleteIntent(onDismissedIntent(context, ALARM_SOUNDING_NOTIFICATION_ID))
+                        .setDeleteIntent(onDismissedIntent(context, ALARM_SOUNDING_NOTIFICATION_ID, alarmEntryId))
                         .setAutoCancel(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             notificationBuilder.setPriority(NotificationManager.IMPORTANCE_HIGH);
@@ -54,9 +55,10 @@ public class NotificationUtils {
         notificationManager.notify(ALARM_SOUNDING_NOTIFICATION_ID, notificationBuilder.build());
     }
 
-    private static PendingIntent onDismissedIntent(Context context, int notificationId) {
+    private static PendingIntent onDismissedIntent(Context context, int notificationId, int alarmEntryId) {
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_ID, notificationId);
+        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, notificationId);
+        intent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
 
         return PendingIntent.getBroadcast(context.getApplicationContext(),
                 notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);

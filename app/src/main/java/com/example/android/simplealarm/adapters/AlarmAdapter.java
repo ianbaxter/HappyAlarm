@@ -3,10 +3,12 @@ package com.example.android.simplealarm.adapters;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -57,6 +59,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             implements View.OnClickListener {
         public Button alarmTimeButton;
         public Switch alarmSwitch;
+        public CheckBox alarmRepeatButton;
 
         /**
          * Constructor for the AlarmViewHolders
@@ -67,6 +70,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             super(alarmView);
             alarmTimeButton = alarmView.findViewById(R.id.button_alarm_time);
             alarmSwitch = alarmView.findViewById(R.id.switch_alarm);
+            alarmRepeatButton = alarmView.findViewById(R.id.checkbox_repeat);
 
             alarmTimeButton.setOnClickListener(this);
         }
@@ -109,40 +113,78 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         // Determine the values of the wanted data
         AlarmEntry alarmEntry = mAlarmEntries.get(position);
         String time = alarmEntry.getTime();
-        boolean alarmState = alarmEntry.getAlarmIsOn();
+        boolean alarmIsOn = alarmEntry.getAlarmIsOn();
+        boolean alarmIsRepeating = alarmEntry.getAlarmIsRepeating();
 
         // Set values
         holder.alarmTimeButton.setText(time);
-        holder.alarmSwitch.setChecked(alarmState);
+        holder.alarmSwitch.setChecked(alarmIsOn);
+        holder.alarmRepeatButton.setChecked(alarmIsRepeating);
 
         // Set OnCheckedChangeListener to alarmSwitch
         holder.alarmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                // Get adapterPosition of holder and update alarmEntry
-                int adapterPosition = holder.getAdapterPosition();
-                final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
-                int alarmEntryId = alarmEntry.getId();
-                String time = alarmEntry.getTime();
-                alarmEntry.setAlarmIsOn(isChecked);
+                if (buttonView.isPressed()) {
+                    // Get adapterPosition of holder and update alarmEntry
+                    int adapterPosition = holder.getAdapterPosition();
+                    final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+                    int alarmEntryId = alarmEntry.getId();
+                    String time = alarmEntry.getTime();
+                    alarmEntry.setAlarmIsOn(isChecked);
 
-                if (isChecked) {
-                    // MyAlarm turned on, set alarm
-                    new AlarmReceiver(mContext, alarmEntry);
-                    String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
-                    Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
-                } else {
-                    // MyAlarm turned off, disable alarm
-                    AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
-                }
-
-                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        AppDatabase mDb = AppDatabase.getInstance(mContext);
-                        mDb.alarmDao().updateAlarm(alarmEntry);
+                    if (isChecked) {
+                        // MyAlarm turned on, set alarm
+                        new AlarmReceiver(mContext, alarmEntry);
+                        String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
+                        Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+                    } else {
+                        // MyAlarm turned off, disable alarm
+                        AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
                     }
-                });
+
+                    AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            AppDatabase mDb = AppDatabase.getInstance(mContext);
+                            mDb.alarmDao().updateAlarm(alarmEntry);
+                        }
+                    });
+                }
+            }
+        });
+        // Set OnCheckedChangeListener to alarmRepeatButton
+        holder.alarmRepeatButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (buttonView.isPressed()) {
+                    // Get adapterPosition of holder and update alarmEntry
+                    int adapterPosition = holder.getAdapterPosition();
+                    final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+                    alarmEntry.setAlarmIsRepeating(isChecked);
+
+                    // If alarmIsOn cancel current repeating alarm and restart single alarm
+                    boolean alarmIsOn = alarmEntry.getAlarmIsOn();
+                    if (alarmIsOn) {
+                        int alarmEntryId = alarmEntry.getId();
+                        AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
+                        new AlarmReceiver(mContext, alarmEntry);
+                    }
+
+                    AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            AppDatabase mDb = AppDatabase.getInstance(mContext);
+                            mDb.alarmDao().updateAlarm(alarmEntry);
+                        }
+                    });
+
+                    // Toast if repeat is changed to true
+                    boolean alarmIsRepeating = alarmEntry.getAlarmIsRepeating();
+                    if (alarmIsRepeating) {
+                        Toast.makeText(mContext, mContext.getString(R.string.alarm_repeating_message), Toast.LENGTH_LONG).show();
+                    }
+                }
             }
         });
     }

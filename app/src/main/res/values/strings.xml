@@ -1,10 +1,9 @@
 <resources>
     <string name="app_name">Simple Alarm</string>
-    <string name="alarm_on_message">Alarm is on</string>
-    <string name="alarm_off_message">Alarm is off</string>
-    <string name="alarm_set_message">Alarm has been set for</string>
-    <string name="alarm_turned_off_message">Alarm turned off</string>
+    <string name="alarm_set_message">Alarm set for</string>
     <string name="alarm_sounding_message">Alarm sounding</string>
     <string name="alarm_notification_channel_name">Alarm notification channel</string>
     <string name="empty_view_text">No alarms</string>
+    <string name="description_repeat_alarm">Repeat Alarm</string>
+    <string name="alarm_repeating_message">Alarm will repeat daily</string>
 </resources>

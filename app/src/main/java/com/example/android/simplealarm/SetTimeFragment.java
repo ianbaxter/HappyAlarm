@@ -13,6 +13,7 @@ import com.example.android.simplealarm.database.AlarmEntry;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class SetTimeFragment extends DialogFragment implements TimePickerDialog.OnTimeSetListener {
 
@@ -52,19 +53,14 @@ public class SetTimeFragment extends DialogFragment implements TimePickerDialog.
 
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        String time;
-        if (minute < 10) {
-            time = hourOfDay + ":0" + minute;
-        } else {
-            time = hourOfDay + ":" + minute;
-        }
+        String time24hrFormatted = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute);
 
         TimeDialogListener listener = (TimeDialogListener) getActivity();
         if (listener != null) {
             if (newAlarm) {
-                listener.onFinishNewTimeDialog(time);
+                listener.onFinishNewTimeDialog(time24hrFormatted);
             } else {
-                listener.onFinishUpdateTimeDialog(time, clickedItemIndex);
+                listener.onFinishUpdateTimeDialog(time24hrFormatted, clickedItemIndex);
             }
         }
     }

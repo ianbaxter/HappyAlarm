@@ -19,6 +19,8 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static final String TAG = AlarmReceiver.class.getSimpleName();
 
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
+    private static final String ALARM_ENTRY_REPEATING_KEY = "alarm_entry_repeating";
+    private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
 
     private static MediaPlayer mediaPlayer;
 
@@ -29,32 +31,52 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     public AlarmReceiver(Context context, AlarmEntry alarmEntry) {
         // Create a pending intent for the alarm
-        Intent intent = new Intent(context, AlarmReceiver.class);
+        Intent alarmIntent = new Intent(context, AlarmReceiver.class);
         int alarmEntryId = alarmEntry.getId();
-        Log.i(TAG, "MyAlarm set with id: " + alarmEntryId);
-        intent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, alarmEntryId,
-                intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        boolean alarmRepeatIsOn = alarmEntry.getAlarmIsRepeating();
+        alarmIntent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
+        alarmIntent.putExtra(ALARM_ENTRY_REPEATING_KEY, alarmRepeatIsOn);
+        PendingIntent alarmPendingIntent = PendingIntent.getBroadcast(context, alarmEntryId,
+                alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Determine time until alarm
         String alarmEntryTime = alarmEntry.getTime();
+        Log.i(TAG, "AlarmReceiver Time is: " + (alarmEntryTime));
         long alarmTimeInMillis = AlarmUtils.getAlarmTimeInMillis(alarmEntryTime);
 
-        // Set alarm on alarmManager
+        // Set alarm on alarmManager depending on whether it should repeat or not
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, pendingIntent);
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, alarmPendingIntent);
         } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, pendingIntent);
+            alarmManager.set(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, alarmPendingIntent);
         }
     }
 
     @Override
-    public void onReceive(final Context context, Intent intent) {
-        if (intent.getExtras() != null && intent.hasExtra("alarm_dismissed_notification")) {
+    public void onReceive(final Context context, final Intent intent) {
+        // Determine which intent has been received
+        if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISSED_NOTIFICATION_KEY)) {
             stopAlarm();
-        } else {
-            NotificationUtils.alarmSoundingNotification(context);
+
+            AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    // Snooze alarm for a set number of minutes
+                    if (intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
+                        int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                        AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                        AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                        String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(5);
+                        alarmEntry.setTime(snoozedAlarmTime);
+                        new AlarmReceiver(context, alarmEntry);
+                    }
+                }
+            });
+        } else if (intent.getExtras() != null && intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
+            int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+            NotificationUtils.alarmSoundingNotification(context, alarmEntryId);
 
             mediaPlayer = MediaPlayer.create(context, R.raw.alarm1);
             mediaPlayer.setLooping(false);
@@ -68,16 +90,34 @@ public class AlarmReceiver extends BroadcastReceiver {
                 }
             });
 
-            // Set alarmIsOn to false after corresponding alarm has been triggered
-            if (intent != null && intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
-                final int itemIndex = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
-                Log.i("test", "id intent was:" + itemIndex);
+            // Determine if alarm is meant to repeat and set new alarm with same alarmEntry with newAlarmTime
+            boolean alarmRepeatIsOn = false;
+            if (intent.hasExtra(ALARM_ENTRY_REPEATING_KEY)) {
+                alarmRepeatIsOn = intent.getBooleanExtra(ALARM_ENTRY_REPEATING_KEY, false);
+                if (alarmRepeatIsOn) {
+                    AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                            AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                            AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                            String currentAlarmTime = alarmEntry.getTime();
+                            String newAlarmTime = AlarmUtils.newAlarmTime(currentAlarmTime, 24);
+                            alarmEntry.setTime(newAlarmTime);
+                            new AlarmReceiver(context, alarmEntry);
+                        }
+                    });
+                }
+            }
 
+            // If alarm is not set to repeat, set alarmIsOn to false to turn off alarm
+            if (!alarmRepeatIsOn) {
                 AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                     @Override
                     public void run() {
+                        int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
                         AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-                        AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(itemIndex);
+                        AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
                         // Check if alarm is already on and turn on if not
                         if (alarmEntry.getAlarmIsOn()) {
                             alarmEntry.setAlarmIsOn(false);

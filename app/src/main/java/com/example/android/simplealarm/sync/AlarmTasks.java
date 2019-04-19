@@ -25,11 +25,4 @@ public class AlarmTasks {
         AlarmReceiver.stopAlarm();
         NotificationUtils.clearAllNotifications(context);
     }
-
-    private static void snoozeAlarm(Context context) {
-        AlarmReceiver.stopAlarm();
-        NotificationUtils.clearAllNotifications(context);
-
-
-    }
 }

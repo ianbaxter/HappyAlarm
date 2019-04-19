@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onFinishNewTimeDialog(String time) {
-        final AlarmEntry alarmEntry = new AlarmEntry(time, false);
+        final AlarmEntry alarmEntry = new AlarmEntry(time, false, false);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
@@ -143,8 +143,8 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     // Cancel previous alarm and set new alarm
                     AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
-                    new AlarmReceiver(MainActivity.this, alarmEntry);
                 }
+                new AlarmReceiver(MainActivity.this, alarmEntry);
                 mDb.alarmDao().updateAlarm(alarmEntry);
                 Log.i(TAG, "alarmEntry time is:" + alarmEntry.getTime());
             }
