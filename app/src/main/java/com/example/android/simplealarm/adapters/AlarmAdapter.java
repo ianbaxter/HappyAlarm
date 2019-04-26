@@ -3,7 +3,6 @@ package com.example.android.simplealarm.adapters;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +12,7 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
 
-import com.example.android.simplealarm.AlarmReceiver;
+import com.example.android.simplealarm.AlarmInstance;
 import com.example.android.simplealarm.AppExecutors;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
@@ -23,49 +22,29 @@ import com.example.android.simplealarm.utilities.AlarmUtils;
 import java.util.List;
 
 /**
- * This adapter creates and binds ViewHolders that hold the alarm details to a RecyclerView
+ * This adapter creates and binds ViewHolders, that hold the alarm details, to a RecyclerView
  */
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
-    // Member variable to handle item clicks
     final private ListItemClickListener mOnClickListener;
-
-    // Class variables for the list that holds task data and the context
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
 
-    private static final String TAG = AlarmAdapter.class.getSimpleName();
-
-    /**
-     * Constructor for AlarmAdapter
-     *
-     * @param context the ccurrent context
-     * @param listener the ItemClickListener
-     */
     public AlarmAdapter(Context context, ListItemClickListener listener){
         mContext = context;
         mOnClickListener = listener;
     }
 
-    /**
-     * Add interface for ClickListener
-     */
     public interface ListItemClickListener {
-        void onAlarmClick(int adapterPosition, int itemId);
+        void onAlarmClick(int adapterPosition, int alarmEntryId);
     }
 
-    // Inner class for creating ViewHolders
     class AlarmViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener {
         public Button alarmTimeButton;
         public Switch alarmSwitch;
         public CheckBox alarmRepeatButton;
 
-        /**
-         * Constructor for the AlarmViewHolders
-         *
-         * @param alarmView The view inflated in onCreateViewHolder
-         */
         public AlarmViewHolder(View alarmView) {
             super(alarmView);
             alarmTimeButton = alarmView.findViewById(R.id.button_alarm_time);
@@ -78,19 +57,12 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         @Override
         public void onClick(View view) {
             int adapterPosition = getAdapterPosition();
-            int alarmEntryId = mAlarmEntries.get(getAdapterPosition()).getId();
+            AlarmEntry alarmEntry = mAlarmEntries.get(getAdapterPosition());
+            int alarmEntryId = alarmEntry.getId();
             mOnClickListener.onAlarmClick(adapterPosition, alarmEntryId);
         }
     }
 
-    /**
-     * Called when ViewHolders are created to fill the RecyclerView
-     *
-     * @param parent The parent view to this child view
-     * @param viewType
-     *
-     * @return A new AlarmViewHolder that holds the view for each alarm
-     */
     @NonNull
     @Override
     public AlarmViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -105,88 +77,115 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     /**
      * Called by the RecyclerView to display data at a specified position
      *
-     * @param holder The ViewHolder to bind Cursor data to
-     * @param position The position of the data in the cursor
+     * @param viewHolder The ViewHolder to bind data to
+     * @param position The position of the data in the database
      */
     @Override
-    public void onBindViewHolder(@NonNull final AlarmViewHolder holder, int position) {
-        // Determine the values of the wanted data
+    public void onBindViewHolder(@NonNull final AlarmViewHolder viewHolder, int position) {
         AlarmEntry alarmEntry = mAlarmEntries.get(position);
-        String time = alarmEntry.getTime();
-        boolean alarmIsOn = alarmEntry.getAlarmIsOn();
-        boolean alarmIsRepeating = alarmEntry.getAlarmIsRepeating();
+        String alarmTime = alarmEntry.getTime();
+        boolean isAlarmOn = alarmEntry.isAlarmOn();
+        boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
 
-        // Set values
-        holder.alarmTimeButton.setText(time);
-        holder.alarmSwitch.setChecked(alarmIsOn);
-        holder.alarmRepeatButton.setChecked(alarmIsRepeating);
+        viewHolder.alarmTimeButton.setText(alarmTime);
+        viewHolder.alarmSwitch.setChecked(isAlarmOn);
+        viewHolder.alarmRepeatButton.setChecked(isAlarmRepeating);
 
-        // Set OnCheckedChangeListener to alarmSwitch
-        holder.alarmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        viewHolder.alarmSwitch.setOnCheckedChangeListener(getSwitchListener(viewHolder));
+        viewHolder.alarmRepeatButton.setOnCheckedChangeListener(getRepeatButtonListener(viewHolder));
+    }
+
+    @NonNull
+    private CompoundButton.OnCheckedChangeListener getSwitchListener(@NonNull final AlarmViewHolder holder) {
+        return new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isOn) {
                 if (buttonView.isPressed()) {
-                    // Get adapterPosition of holder and update alarmEntry
-                    int adapterPosition = holder.getAdapterPosition();
-                    final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+                    final AlarmEntry alarmEntry = getAlarmEntryFromHolder(holder);
                     int alarmEntryId = alarmEntry.getId();
-                    String time = alarmEntry.getTime();
-                    alarmEntry.setAlarmIsOn(isChecked);
+                    String alarmTime = alarmEntry.getTime();
+                    alarmEntry.setAlarmOn(isOn);
 
-                    if (isChecked) {
-                        // MyAlarm turned on, set alarm
-                        new AlarmReceiver(mContext, alarmEntry);
-                        String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
-                        Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+                    if (isOn) {
+                        setNewAlarm(alarmEntry, alarmTime);
                     } else {
-                        // MyAlarm turned off, disable alarm
-                        AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
+                        AlarmInstance.cancelAlarm(mContext, alarmEntryId);
                     }
 
                     AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                         @Override
                         public void run() {
-                            AppDatabase mDb = AppDatabase.getInstance(mContext);
-                            mDb.alarmDao().updateAlarm(alarmEntry);
+                            updateAlarmEntry(alarmEntry);
                         }
                     });
                 }
             }
-        });
-        // Set OnCheckedChangeListener to alarmRepeatButton
-        holder.alarmRepeatButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (buttonView.isPressed()) {
-                    // Get adapterPosition of holder and update alarmEntry
-                    int adapterPosition = holder.getAdapterPosition();
-                    final AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
-                    alarmEntry.setAlarmIsRepeating(isChecked);
 
-                    // If alarmIsOn cancel current repeating alarm and restart single alarm
-                    boolean alarmIsOn = alarmEntry.getAlarmIsOn();
+            private void setNewAlarm(AlarmEntry alarmEntry, String alarmTime) {
+                new AlarmInstance(mContext, alarmEntry);
+                String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(alarmTime);
+                Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+            }
+        };
+    }
+
+    @NonNull
+    private CompoundButton.OnCheckedChangeListener getRepeatButtonListener(@NonNull final AlarmViewHolder holder) {
+        return new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isRepeating) {
+                if (buttonView.isPressed()) {
+                    final AlarmEntry alarmEntry = getAlarmEntryFromHolder(holder);
+                    alarmEntry.setAlarmRepeating(isRepeating);
+
+                    boolean alarmIsOn = alarmEntry.isAlarmOn();
                     if (alarmIsOn) {
-                        int alarmEntryId = alarmEntry.getId();
-                        AlarmReceiver.cancelAlarm(mContext, alarmEntryId);
-                        new AlarmReceiver(mContext, alarmEntry);
+                        resetCurrentAlarm(alarmEntry);
                     }
 
                     AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                         @Override
                         public void run() {
-                            AppDatabase mDb = AppDatabase.getInstance(mContext);
-                            mDb.alarmDao().updateAlarm(alarmEntry);
+                            updateAlarmEntry(alarmEntry);
                         }
                     });
 
-                    // Toast if repeat is changed to true
-                    boolean alarmIsRepeating = alarmEntry.getAlarmIsRepeating();
-                    if (alarmIsRepeating) {
+                    if (isRepeating) {
                         Toast.makeText(mContext, mContext.getString(R.string.alarm_repeating_message), Toast.LENGTH_LONG).show();
                     }
                 }
             }
-        });
+
+            private void resetCurrentAlarm(AlarmEntry alarmEntry) {
+                int alarmEntryId = alarmEntry.getId();
+                AlarmInstance.cancelAlarm(mContext, alarmEntryId);
+                new AlarmInstance(mContext, alarmEntry);
+            }
+        };
+    }
+
+    private AlarmEntry getAlarmEntryFromHolder(@NonNull AlarmViewHolder holder) {
+        int adapterPosition = holder.getAdapterPosition();
+        return getAlarmEntryFromAdapterPosition(adapterPosition);
+    }
+
+    public static AlarmEntry getAlarmEntryFromAdapterPosition(int adapterPosition) {
+        List<AlarmEntry> alarmEntries = getAlarmEntries();
+        return alarmEntries.get(adapterPosition);
+    }
+
+    private void updateAlarmEntry(AlarmEntry alarmEntry) {
+        AppDatabase mDb = AppDatabase.getInstance(mContext);
+        mDb.alarmDao().updateAlarm(alarmEntry);
+    }
+
+    public static List<AlarmEntry> getAlarmEntries() {
+        return mAlarmEntries;
+    }
+
+    public void setAlarmEntries(List<AlarmEntry> alarmEntries) {
+        mAlarmEntries = alarmEntries;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -195,15 +194,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             return 0;
         }
         return mAlarmEntries.size();
-    }
-
-    public static List<AlarmEntry> getTasks() {
-        return mAlarmEntries;
-    }
-
-    public void setTasks(List<AlarmEntry> alarmEntries) {
-        mAlarmEntries = alarmEntries;
-        notifyDataSetChanged();
     }
 }
 

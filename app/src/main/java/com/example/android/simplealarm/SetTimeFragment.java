@@ -11,62 +11,89 @@ import android.widget.TimePicker;
 import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.database.AlarmEntry;
 
+import java.time.LocalTime;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 
 public class SetTimeFragment extends DialogFragment implements TimePickerDialog.OnTimeSetListener {
 
-    // Member variable for the database
-    private int clickedItemIndex;
+    private int alarmEntryId;
     private boolean newAlarm = true;
+
+    private static final String CLICKED_ALARM_ID_KEY = "clickedAlarmId";
+    private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
 
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        Calendar calendar = Calendar.getInstance();
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
+        int hour;
+        int minute;
 
-        // If updating an alarm, get the clickedItemIndex, set newAlarm flag to false and get currentAlarmTime
-        if (getArguments() != null && getArguments().containsKey("clickedItemIndex")) {
-            clickedItemIndex = getArguments().getInt("clickedItemIndex");
+        if (getArguments() != null && getArguments().containsKey(CLICKED_ALARM_ID_KEY) && getArguments().containsKey(CLICKED_ALARM_POSITION_KEY)) {
             newAlarm = false;
 
-            if (getArguments().containsKey("clickedItemPosition")) {
-                int adapterPosition = getArguments().getInt("clickedItemPosition");
-                List<AlarmEntry> alarmEntries = AlarmAdapter.getTasks();
-                AlarmEntry alarmEntry = alarmEntries.get(adapterPosition);
-                String currentAlarmTime = alarmEntry.getTime();
+            alarmEntryId = getArguments().getInt(CLICKED_ALARM_ID_KEY);
+            int adapterPosition = getArguments().getInt(CLICKED_ALARM_POSITION_KEY);
+            AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(adapterPosition);
+            String currentAlarmTime = alarmEntry.getTime();
+            String[] hoursAndMinutes = currentAlarmTime.split(":");
 
-                String[] hoursAndMinutes = currentAlarmTime.split(":");
-                String hoursString = hoursAndMinutes[0];
-                String minutesString = hoursAndMinutes[1];
-                hour = Integer.parseInt(hoursString);
-                minute = Integer.parseInt(minutesString);
-            }
+            hour = getAlarmHour(hoursAndMinutes);
+            minute = getAlarmMinute(hoursAndMinutes);
+        } else {
+            hour = getCurrentHour();
+            minute = getCurrentMinute();
         }
 
-        return new TimePickerDialog(getActivity(),
-                this, hour, minute, true);
+        return new TimePickerDialog(getActivity(),this, hour, minute, true);
+    }
+
+    private int getAlarmHour(String[] hoursAndMinutes) {
+        String hoursString = hoursAndMinutes[0];
+        return Integer.parseInt(hoursString);
+    }
+
+    private int getAlarmMinute(String[] hoursAndMinutes) {
+        String minutesString = hoursAndMinutes[1];
+        return Integer.parseInt(minutesString);
+    }
+
+    private int getCurrentHour() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            LocalTime currentTime = LocalTime.now();
+            return currentTime.getHour();
+        } else {
+            Calendar calendar = Calendar.getInstance();
+            return calendar.get(Calendar.HOUR_OF_DAY);
+        }
+    }
+
+    private int getCurrentMinute() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            LocalTime currentTime = LocalTime.now();
+            return currentTime.getMinute();
+        } else {
+            Calendar calendar = Calendar.getInstance();
+            return calendar.get(Calendar.MINUTE);
+        }
     }
 
     @Override
-    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        String time24hrFormatted = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute);
+    public void onTimeSet(TimePicker view, int hour, int minute) {
+        String time24hrFormatted = String.format(Locale.getDefault(), "%02d:%02d", hour, minute);
 
         TimeDialogListener listener = (TimeDialogListener) getActivity();
         if (listener != null) {
             if (newAlarm) {
-                listener.onFinishNewTimeDialog(time24hrFormatted);
+                listener.onFinishNewAlarm(time24hrFormatted);
             } else {
-                listener.onFinishUpdateTimeDialog(time24hrFormatted, clickedItemIndex);
+                listener.onFinishUpdateAlarm(time24hrFormatted, alarmEntryId);
             }
         }
     }
 
     public interface TimeDialogListener {
-        void onFinishNewTimeDialog(String time);
-        void onFinishUpdateTimeDialog(String time, int clickedItemIndex);
+        void onFinishNewAlarm(String time);
+        void onFinishUpdateAlarm(String time, int alarmEntryId);
     }
 }

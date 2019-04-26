@@ -34,7 +34,7 @@
         android:layout_margin="16dp"
         android:layout_alignParentBottom="true"
         android:layout_centerInParent="true"
-        android:onClick="showNewTimePickerDialog">
+        android:onClick="newTimePickerDialog">
 
     </android.support.design.widget.FloatingActionButton>
 </RelativeLayout>

@@ -25,15 +25,14 @@ import com.example.android.simplealarm.viewmodels.MainViewModel;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity
-        implements AlarmAdapter.ListItemClickListener,
+public class MainActivity extends AppCompatActivity implements AlarmAdapter.ListItemClickListener,
         SetTimeFragment.TimeDialogListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final String TIME_PICKER_FRAGMENT_ID = "timePicker";
-    private static final String CLICKED_ITEM_INDEX_KEY = "clickedItemIndex";
-    private static final String CLICKED_ITEM_POSITION_KEY = "clickedItemPosition";
+    private static final String CLICKED_ALARM_ID_KEY = "clickedAlarmId";
+    private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
 
     private AlarmAdapter mAdaptor;
     private AppDatabase mDb;
@@ -42,23 +41,25 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EmptyRecyclerView recyclerView = findViewById(R.id.my_recycler_view);
+        mAdaptor = new AlarmAdapter(this, this);
         TextView emptyView = findViewById(R.id.tv_empty_view);
+        EmptyRecyclerView recyclerView = findViewById(R.id.my_recycler_view);
 
-        // set size of RecyclerView to be fixed as changes of content will not change the layout size of the RecyclerView
-        recyclerView.setHasFixedSize(true);
-
-        // use a linear layout manager
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
-
-        // specify an adaptor
-        mAdaptor = new AlarmAdapter(this, this);
         recyclerView.setAdapter(mAdaptor);
         recyclerView.setEmptyView(emptyView);
+        recyclerView.setHasFixedSize(true);
 
-        // Add a touch helper to the RecyclerView to recognise when the user swipes a ViewHolder.
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+        newItemTouchHelper().attachToRecyclerView(recyclerView);
+
+        mDb = AppDatabase.getInstance(getApplicationContext());
+
+        setupViewModel();
+    }
+
+    private ItemTouchHelper newItemTouchHelper() {
+        return new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
                 return false;
@@ -69,22 +70,24 @@ public class MainActivity extends AppCompatActivity
                 AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                     @Override
                     public void run() {
-                        int position = viewHolder.getAdapterPosition();
-                        List<AlarmEntry> alarmEntries = AlarmAdapter.getTasks();
-                        AlarmEntry alarmEntry = alarmEntries.get(position);
-                        // Cancel PendingIntent for deleted alarm if alarmIsOn
-                        if (alarmEntry.getAlarmIsOn()) {
+                        AlarmEntry alarmEntry = getAlarmEntryFromViewHolder();
+                        boolean isAlarmOn = alarmEntry.isAlarmOn();
+
+                        if (isAlarmOn) {
                             int alarmEntryId = alarmEntry.getId();
-                            AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
+                            AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
                         }
                         mDb.alarmDao().deleteAlarm(alarmEntry);
                     }
+
+                    private AlarmEntry getAlarmEntryFromViewHolder() {
+                        int position = viewHolder.getAdapterPosition();
+                        List<AlarmEntry> alarmEntries = AlarmAdapter.getAlarmEntries();
+                        return alarmEntries.get(position);
+                    }
                 });
             }
-        }).attachToRecyclerView(recyclerView);
-
-        mDb = AppDatabase.getInstance(getApplicationContext());
-        setupViewModel();
+        });
     }
 
     private void setupViewModel() {
@@ -93,32 +96,32 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onChanged(@Nullable List<AlarmEntry> alarmEntries) {
                 Log.d(TAG, "Updating the list of alarms from LiveData in ViewModel");
-                mAdaptor.setTasks(alarmEntries);
+                mAdaptor.setAlarmEntries(alarmEntries);
             }
         });
     }
 
     @Override
-    public void onAlarmClick(int adapterPosition, int clickedItemIndex) {
-        showAndUpdateTimePickerDialog(adapterPosition, clickedItemIndex);
+    public void onAlarmClick(int adapterPosition, int alarmEntryId) {
+        updateTimePickerDialog(adapterPosition, alarmEntryId);
     }
 
-    public void showNewTimePickerDialog(View view) {
-        DialogFragment newFragment = new SetTimeFragment();
-        newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
-    }
-
-    public void showAndUpdateTimePickerDialog(int adapterPosition, int clickedItemIndex) {
+    public void updateTimePickerDialog(int adapterPosition, int alarmEntryId) {
         DialogFragment newFragment = new SetTimeFragment();
         Bundle bundle = new Bundle();
-        bundle.putInt(CLICKED_ITEM_POSITION_KEY, adapterPosition);
-        bundle.putInt(CLICKED_ITEM_INDEX_KEY, clickedItemIndex);
+        bundle.putInt(CLICKED_ALARM_POSITION_KEY, adapterPosition);
+        bundle.putInt(CLICKED_ALARM_ID_KEY, alarmEntryId);
         newFragment.setArguments(bundle);
         newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
     }
 
+    public void newTimePickerDialog(View view) {
+        DialogFragment newFragment = new SetTimeFragment();
+        newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
+    }
+
     @Override
-    public void onFinishNewTimeDialog(String time) {
+    public void onFinishNewAlarm(String time) {
         final AlarmEntry alarmEntry = new AlarmEntry(time, false, false);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
@@ -129,29 +132,25 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onFinishUpdateTimeDialog(final String time, final int clickedItemIndex) {
+    public void onFinishUpdateAlarm(final String time, final int alarmEntryId) {
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(clickedItemIndex);
-                int alarmEntryId = alarmEntry.getId();
+                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
                 alarmEntry.setTime(time);
-                // Check if alarm is already on and turn on if not
-                boolean alarmIsOn = alarmEntry.getAlarmIsOn();
-                if (!alarmIsOn) {
-                    alarmEntry.setAlarmIsOn(true);
+
+                boolean isAlarmOn = alarmEntry.isAlarmOn();
+                if (isAlarmOn) {
+                    AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
                 } else {
-                    // Cancel previous alarm and set new alarm
-                    AlarmReceiver.cancelAlarm(MainActivity.this, alarmEntryId);
+                    alarmEntry.setAlarmOn(true);
                 }
-                new AlarmReceiver(MainActivity.this, alarmEntry);
+
                 mDb.alarmDao().updateAlarm(alarmEntry);
-                Log.i(TAG, "alarmEntry time is:" + alarmEntry.getTime());
+                new AlarmInstance(MainActivity.this, alarmEntry);
             }
         });
         String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
         Toast.makeText(this, this.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
     }
 }
-
-

@@ -10,22 +10,22 @@ public class AlarmEntry {
     @PrimaryKey(autoGenerate = true)
     private int id;
     private String time;
-    private boolean alarmIsOn;
-    private boolean alarmIsRepeating;
+    private boolean isAlarmOn;
+    private boolean isAlarmRepeating;
 
     @Ignore
-    public AlarmEntry(String time, boolean alarmIsOn, boolean alarmIsRepeating) {
+    public AlarmEntry(String time, boolean isAlarmOn, boolean isAlarmRepeating) {
         this.time = time;
-        this.alarmIsOn = alarmIsOn;
-        this.alarmIsRepeating = alarmIsRepeating;
+        this.isAlarmOn = isAlarmOn;
+        this.isAlarmRepeating = isAlarmRepeating;
 
     }
 
-    public AlarmEntry(int id, String time, boolean alarmIsOn, boolean alarmIsRepeating) {
+    public AlarmEntry(int id, String time, boolean isAlarmOn, boolean isAlarmRepeating) {
         this.id = id;
         this.time = time;
-        this.alarmIsOn = alarmIsOn;
-        this.alarmIsRepeating = alarmIsRepeating;
+        this.isAlarmOn = isAlarmOn;
+        this.isAlarmRepeating = isAlarmRepeating;
     }
 
     public int getId() { return id; }
@@ -36,11 +36,11 @@ public class AlarmEntry {
 
     public void setTime(String time) { this.time = time; }
 
-    public boolean getAlarmIsOn() { return alarmIsOn; }
+    public boolean isAlarmOn() { return isAlarmOn; }
 
-    public void setAlarmIsOn(boolean alarmIsOn) { this.alarmIsOn = alarmIsOn; }
+    public void setAlarmOn(boolean isAlarmOn) { this.isAlarmOn = isAlarmOn; }
 
-    public boolean getAlarmIsRepeating() { return alarmIsRepeating; }
+    public boolean isAlarmRepeating() { return isAlarmRepeating; }
 
-    public void setAlarmIsRepeating(boolean alarmIsRepeating) { this.alarmIsRepeating = alarmIsRepeating; }
+    public void setAlarmRepeating(boolean isAlarmRepeating) { this.isAlarmRepeating = isAlarmRepeating; }
 }

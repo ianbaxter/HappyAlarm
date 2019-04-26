@@ -28,11 +28,11 @@ public class NotificationUtils {
         notificationManager.cancelAll();
     }
 
-    public static void alarmSoundingNotification(Context context, int alarmEntryId) {
+    public static void alarmTriggeredNotification(Context context, int alarmEntryId) {
         NotificationManager notificationManager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel mChannel = new NotificationChannel(
                     ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY,
                     context.getString(R.string.alarm_notification_channel_name),
@@ -46,28 +46,27 @@ public class NotificationUtils {
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
                         .setContentText("Swipe to snooze for 5 minutes")
                         .addAction(stopAlarmAction(context))
-                        .setDeleteIntent(onDismissedIntent(context, ALARM_SOUNDING_NOTIFICATION_ID, alarmEntryId))
+                        .setDeleteIntent(onDismissedIntent(context, alarmEntryId))
                         .setAutoCancel(true);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             notificationBuilder.setPriority(NotificationManager.IMPORTANCE_HIGH);
         }
 
         notificationManager.notify(ALARM_SOUNDING_NOTIFICATION_ID, notificationBuilder.build());
     }
 
-    private static PendingIntent onDismissedIntent(Context context, int notificationId, int alarmEntryId) {
+    private static PendingIntent onDismissedIntent(Context context, int alarmEntryId) {
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, notificationId);
+        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, NotificationUtils.ALARM_SOUNDING_NOTIFICATION_ID);
         intent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
 
         return PendingIntent.getBroadcast(context.getApplicationContext(),
-                notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                NotificationUtils.ALARM_SOUNDING_NOTIFICATION_ID, intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     private static NotificationCompat.Action stopAlarmAction(Context context) {
-
         Intent stopAlarmIntent = new Intent(context, AlarmIntentService.class);
-
         stopAlarmIntent.setAction(AlarmTasks.ACTION_STOP_ALARM);
 
         PendingIntent stopAlarmPendingIntent = PendingIntent.getService(
