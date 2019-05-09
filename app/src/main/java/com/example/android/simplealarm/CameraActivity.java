@@ -1,8 +1,11 @@
 package com.example.android.simplealarm;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -24,13 +27,19 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.FileCallback;
 import com.otaliastudios.cameraview.Frame;
 import com.otaliastudios.cameraview.FrameProcessor;
 import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.Size;
 
 import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+
+import static android.os.Environment.getExternalStoragePublicDirectory;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -39,6 +48,8 @@ public class CameraActivity extends AppCompatActivity {
 
     CameraView cameraView;
     TextView smileText;
+
+    String currentPhotoPath;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,9 +64,12 @@ public class CameraActivity extends AppCompatActivity {
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(@NonNull PictureResult result) {
-                checkPermissionsAndSavePhoto(result);
+                savePhoto(result);
+                finish();
             }
         });
+
+        checkWriteExternalStoragePermissions();
 
         cameraView.addFrameProcessor(new FrameProcessor() {
             @Override
@@ -89,6 +103,8 @@ public class CameraActivity extends AppCompatActivity {
                                     @Override
                                     public void onSuccess(List<FirebaseVisionFace> faces) {
                                         if (faces.size() == 0) {
+                                            cameraView.takePicture(); // For emulator testing only
+
                                             return;
                                         }
 
@@ -112,15 +128,13 @@ public class CameraActivity extends AppCompatActivity {
         });
     }
 
-    private void checkPermissionsAndSavePhoto(@NonNull PictureResult result) {
+    private void checkWriteExternalStoragePermissions() {
         if (ContextCompat.checkSelfPermission(getApplicationContext(),
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                     REQUEST_STORAGE_PERMISSION);
-        } else {
-            savePhoto(result);
         }
     }
 
@@ -129,7 +143,7 @@ public class CameraActivity extends AppCompatActivity {
         switch (requestCode) {
             case REQUEST_STORAGE_PERMISSION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                    savePhoto();
+                    Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
                 }
@@ -138,8 +152,43 @@ public class CameraActivity extends AppCompatActivity {
 
     private void savePhoto(@NonNull PictureResult result) {
         File photoFile = null;
+        try {
+            photoFile = createImageFile();
+        } catch (IOException e) {
+            Log.e(TAG, "IOException: " + e);
+        }
 
-//        result.toFile(photoFile, );
+        if (photoFile != null) {
+            Log.i(TAG, "Saving photo");
+            result.toFile(photoFile, new FileCallback() {
+                @Override
+                public void onFileReady(@Nullable File file) {
+                    galleryAddPic();
+                }
+            });
+        }
+    }
+
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,
+                ".jpg",
+                storageDir
+        );
+
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    private void galleryAddPic() {
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        File file = new File(currentPhotoPath);
+        Uri contentUri = Uri.fromFile(file);
+        mediaScanIntent.setData(contentUri);
+        this.sendBroadcast(mediaScanIntent);
     }
 
     @Override
