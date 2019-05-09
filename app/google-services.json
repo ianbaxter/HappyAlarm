@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "739088886545",
+    "firebase_url": "https://ml-kit-codelab-20cc4.firebaseio.com",
+    "project_id": "ml-kit-codelab-20cc4",
+    "storage_bucket": "ml-kit-codelab-20cc4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739088886545:android:7a98e11e966159b9",
+        "android_client_info": {
+          "package_name": "com.example.android.simplealarm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "739088886545-gb1siffsklfema1jj1geh5ov6j59q6lm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYPuWQWtV8E_OQQlUu_Ds2Z7RChfhLxRE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "739088886545-gb1siffsklfema1jj1geh5ov6j59q6lm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

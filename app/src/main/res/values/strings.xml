@@ -6,4 +6,5 @@
     <string name="empty_view_text">No alarms</string>
     <string name="description_repeat_alarm">Repeat Alarm</string>
     <string name="alarm_repeating_message">Alarm will repeat daily</string>
+    <string name="smile_camera_text_view">Smile!</string>
 </resources>

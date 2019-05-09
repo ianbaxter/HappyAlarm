@@ -1,6 +1,6 @@
 package com.example.android.simplealarm.utilities;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;

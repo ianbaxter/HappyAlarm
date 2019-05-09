@@ -1,8 +1,8 @@
 package com.example.android.simplealarm.sync;
 
 import android.content.Context;
+import android.content.Intent;
 
-import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.utilities.NotificationUtils;
 
 public class AlarmTasks {
@@ -22,7 +22,12 @@ public class AlarmTasks {
     }
 
     private static void stopAlarmOnNotification(Context context) {
-        AlarmReceiver.stopAlarm();
+        Intent intent = new Intent();
+        intent.setClassName("com.example.android.simplealarm",
+                "com.example.android.simplealarm.CameraActivity");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+
         NotificationUtils.clearAllNotifications(context);
     }
 }
