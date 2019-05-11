@@ -27,7 +27,7 @@ import com.example.android.simplealarm.viewmodels.MainViewModel;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements AlarmAdapter.ListItemClickListener,
+public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmItemClickListener,
         SetTimeFragment.TimeDialogListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -36,20 +36,20 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.List
     private static final String CLICKED_ALARM_ID_KEY = "clickedAlarmId";
     private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
 
-    private AlarmAdapter mAdaptor;
+    private AlarmAdapter alarmAdaptor;
     private AppDatabase mDb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mAdaptor = new AlarmAdapter(this, this);
-        TextView emptyView = findViewById(R.id.tv_empty_view);
-        EmptyRecyclerView recyclerView = findViewById(R.id.my_recycler_view);
+        alarmAdaptor = new AlarmAdapter(this, this);
+        TextView emptyView = findViewById(R.id.tv_empty_view_main);
+        EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
 
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setAdapter(mAdaptor);
+        recyclerView.setAdapter(alarmAdaptor);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
 
@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.List
             @Override
             public void onChanged(@Nullable List<AlarmEntry> alarmEntries) {
                 Log.d(TAG, "Updating the list of alarms from LiveData in ViewModel");
-                mAdaptor.setAlarmEntries(alarmEntries);
+                alarmAdaptor.setAlarmEntries(alarmEntries);
             }
         });
     }
@@ -154,6 +154,11 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.List
         });
         String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
         Toast.makeText(this, this.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+    }
+
+    public void startGalleryActivity(View view) {
+        Intent intent = new Intent(this, GalleryActivity.class);
+        startActivity(intent);
     }
 
 

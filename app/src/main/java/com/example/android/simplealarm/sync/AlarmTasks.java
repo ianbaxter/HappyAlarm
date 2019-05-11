@@ -8,8 +8,9 @@ import com.example.android.simplealarm.utilities.NotificationUtils;
 public class AlarmTasks {
 
     public static final String ACTION_STOP_ALARM = "stop_alarm";
-
     private static final String ACTION_DISMISS_NOTIFICATION = "dismiss_notification";
+
+    private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
 
     public static void executeTasks(Context context, String action) {
         switch (action) {
@@ -23,6 +24,7 @@ public class AlarmTasks {
 
     private static void stopAlarmOnNotification(Context context) {
         Intent intent = new Intent();
+        intent.putExtra(ALARM_DISMISS_KEY, "from BroadcastReceiver");
         intent.setClassName("com.example.android.simplealarm",
                 "com.example.android.simplealarm.CameraActivity");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

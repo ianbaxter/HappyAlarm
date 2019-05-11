@@ -59,7 +59,7 @@ public class NewAlarm_RepeatSwitch_AlarmOnSwitch_LargeTest {
                 allOf(withId(R.id.checkbox_repeat), withContentDescription("Repeat Alarm"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.my_recycler_view),
+                                        withId(R.id.recycler_view_main),
                                         0),
                                 1),
                         isDisplayed()));
@@ -69,7 +69,7 @@ public class NewAlarm_RepeatSwitch_AlarmOnSwitch_LargeTest {
                 allOf(withId(R.id.switch_alarm),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.my_recycler_view),
+                                        withId(R.id.recycler_view_main),
                                         0),
                                 2),
                         isDisplayed()));

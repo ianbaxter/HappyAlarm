@@ -3,9 +3,7 @@ package com.example.android.simplealarm;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -39,17 +37,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import static android.os.Environment.getExternalStoragePublicDirectory;
-
 public class CameraActivity extends AppCompatActivity {
 
     private static String TAG = CameraActivity.class.getSimpleName();
     private static final int REQUEST_STORAGE_PERMISSION = 1;
+    private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
 
-    CameraView cameraView;
-    TextView smileText;
-
-    String currentPhotoPath;
+    private CameraView cameraView;
+    private TextView smileText;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -57,6 +52,8 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         smileText = findViewById(R.id.text_view_smile);
         smileText.setVisibility(View.VISIBLE);
+
+        final Intent intent = getIntent();
 
         cameraView = findViewById(R.id.view_camera);
         cameraView.setLifecycleOwner(this);
@@ -96,14 +93,13 @@ public class CameraActivity extends AppCompatActivity {
                 FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
                         .getVisionFaceDetector(realTimeOpts);
 
-
                 detector.detectInImage(image)
                         .addOnSuccessListener(
                                 new OnSuccessListener<List<FirebaseVisionFace>>() {
                                     @Override
                                     public void onSuccess(List<FirebaseVisionFace> faces) {
                                         if (faces.size() == 0) {
-                                            cameraView.takePicture(); // For emulator testing only
+//                                            cameraView.takePicture(); // For emulator testing only
 
                                             return;
                                         }
@@ -114,11 +110,17 @@ public class CameraActivity extends AppCompatActivity {
                                                 float smileProb = face.getSmilingProbability();
                                                 Log.i(TAG, "Smiling prob: " + smileProb);
 
-                                                if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
-                                                    AlarmReceiver.stopAlarm();
-                                                    smileText.setVisibility(View.GONE);
-                                                    cameraView.takePicture();
-                                                    finish();
+                                                if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+                                                    if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
+                                                        AlarmReceiver.stopAlarm();
+                                                        smileText.setVisibility(View.GONE);
+                                                        cameraView.takePicture();
+                                                    }
+                                                } else {
+                                                    if (smileProb > 0.9) {
+                                                        smileText.setVisibility(View.GONE);
+                                                        cameraView.takePicture();
+                                                    }
                                                 }
                                             }
                                         }
@@ -139,7 +141,8 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUEST_STORAGE_PERMISSION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -163,7 +166,7 @@ public class CameraActivity extends AppCompatActivity {
             result.toFile(photoFile, new FileCallback() {
                 @Override
                 public void onFileReady(@Nullable File file) {
-                    galleryAddPic();
+
                 }
             });
         }
@@ -172,24 +175,18 @@ public class CameraActivity extends AppCompatActivity {
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName,
-                ".jpg",
-                storageDir
-        );
+        File file = new File(this.getFilesDir(), imageFileName + ".jpg");
 
-        currentPhotoPath = image.getAbsolutePath();
-        return image;
+        String currentPhotoPath = file.getAbsolutePath();
+        return file;
     }
-
-    private void galleryAddPic() {
+    /*private void galleryAddPic() {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         File file = new File(currentPhotoPath);
         Uri contentUri = Uri.fromFile(file);
         mediaScanIntent.setData(contentUri);
         this.sendBroadcast(mediaScanIntent);
-    }
+    }*/
 
     @Override
     protected void onPause() {
