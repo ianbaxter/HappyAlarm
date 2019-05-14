@@ -82,7 +82,7 @@ public class NewAlarm_RepeatSwitch_AlarmOnSwitch_LargeTest {
         return new TypeSafeMatcher<View>() {
             @Override
             public void describeTo(Description description) {
-                description.appendText("Child at position " + position + " in parent ");
+                description.appendText("Child at mCurrentPosition " + position + " in parent ");
                 parentMatcher.describeTo(description);
             }
 

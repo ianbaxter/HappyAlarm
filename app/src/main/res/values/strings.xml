@@ -9,4 +9,12 @@
     <string name="alarm_repeating_message">Alarm will repeat daily</string>
     <string name="smile_camera_text_view">Smile!</string>
     <string name="fab_slideshow_clicked">Start face slideshow!</string>
+    <string name="action_share">action_share</string>
+    <string name="action_delete">action_delete</string>
+    <string name="activity_gallery_title">Gallery</string>
+    <string name="action_slideshow">action_slideshow</string>
+    <string name="action_gallery">action_gallery</string>
+    <string name="action_photo">action_photo</string>
+    <string name="dialog_confirm_delete">Yes</string>
+    <string name="dialog_cancel_delete">Cancel</string>
 </resources>

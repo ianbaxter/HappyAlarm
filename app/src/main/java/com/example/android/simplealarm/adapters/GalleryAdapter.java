@@ -1,9 +1,8 @@
 package com.example.android.simplealarm.adapters;
 
+import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.ThumbnailUtils;
+import android.content.Intent;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,34 +12,34 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.android.simplealarm.GalleryDetailActivity;
 import com.example.android.simplealarm.R;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.List;
 
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder> {
 
-    private GalleryItemClickListener galleryItemClickListener;
     private Context mContext;
+    private static List<File> mFiles;
+
+    private static final String GALLERY_POSITION_KEY = "photo_position";
+    private static final int DETAIL_PHOTO_REQUEST = 1;
 
     private static final String TAG = GalleryAdapter.class.getSimpleName();
 
-    public GalleryAdapter(Context context) {
+    public GalleryAdapter(Context context, List<File> files) {
         mContext = context;
-    }
-
-    public interface GalleryItemClickListener {
-        void onItemClick(String fileName);
+        mFiles = files;
     }
 
     class GalleryViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener {
-        public ImageView galleryImageView;
 
-        public GalleryViewHolder(View galleryView) {
+        private ImageView galleryImageView;
+
+        private GalleryViewHolder(View galleryView) {
             super(galleryView);
 
             galleryImageView = galleryView.findViewById(R.id.image_view_gallery_item);
@@ -52,23 +51,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
             int position = getAdapterPosition();
             Log.i(TAG, "Clicked position: " + position);
 
-            FileInputStream fileInputStream = null;
-            try {
-                String[] fileNames = mContext.fileList();
-                String fileName = fileNames[position];
-                fileInputStream = mContext.openFileInput(fileName);
-                File file = new File(mContext.fileList()[position]);
-                file.delete();
-//                Bitmap bitmap = BitmapFactory.decodeStream(fileInputStream);
-            } catch (FileNotFoundException e) {
-                Log.e(TAG, "FileNotFoundException: " + e);
-            } finally {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    Log.e(TAG, "IOException: " + e);
-                }
-            }
+            Intent intent = new Intent(mContext, GalleryDetailActivity.class);
+            intent.putExtra(GALLERY_POSITION_KEY, position);
+            ((Activity) mContext).startActivityForResult(intent, DETAIL_PHOTO_REQUEST);
         }
     }
 
@@ -83,14 +68,17 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
 
     @Override
     public void onBindViewHolder(@NonNull GalleryViewHolder holder, int position) {
-        File dir = mContext.getFilesDir();
-        File[] files = dir.listFiles();
-        Picasso.get().load(files[position]).into(holder.galleryImageView);
+        Picasso.get()
+                .load(mFiles.get(position))
+                .placeholder(R.drawable.outline_image_24)
+                .into(holder.galleryImageView);
     }
 
     @Override
     public int getItemCount() {
-        String[] fileNames = mContext.fileList();
-        return fileNames.length;
+        if (mFiles == null) {
+            return 0;
+        }
+        return mFiles.size();
     }
 }

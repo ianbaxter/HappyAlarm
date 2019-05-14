@@ -1,38 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:animateLayoutChanges="true">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tv_empty_view_gallery"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/empty_view_text_gallery"
-        android:textSize="25sp"
-        android:gravity="center">
+        android:layout_height="match_parent">
 
-    </TextView>
+        <TextView
+            android:id="@+id/tv_empty_view_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="@string/empty_view_text_gallery"
+            android:textSize="25sp"
+            android:gravity="center">
 
-    <com.example.android.simplealarm.adapters.EmptyRecyclerView
-        android:id="@+id/recycler_view_gallery"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scrollbars="vertical"
-        tools:context=".GalleryActivity" >
+        </TextView>
 
-    </com.example.android.simplealarm.adapters.EmptyRecyclerView>
+        <com.example.android.simplealarm.adapters.EmptyRecyclerView
+            android:id="@+id/recycler_view_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            tools:mContext=".GalleryActivity">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_start_slideshow"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:srcCompat="@drawable/outline_slideshow_24"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_centerInParent="true"
-        android:onClick="faceSlideshow"/>
+        </com.example.android.simplealarm.adapters.EmptyRecyclerView>
 
-</RelativeLayout>
+    </RelativeLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -13,6 +13,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 
 import android.widget.TextView;
@@ -156,14 +159,34 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         Toast.makeText(this, this.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
     }
 
-    public void startGalleryActivity(View view) {
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.action_gallery:
+                startGalleryActivity();
+                break;
+            case R.id.action_photo:
+                startCameraActivity();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void startGalleryActivity() {
         Intent intent = new Intent(this, GalleryActivity.class);
         startActivity(intent);
     }
 
-
-    // TEST AREA
-    public void startCameraActivity(View view) {
+    public void startCameraActivity() {
         Intent intent = new Intent(this, CameraActivity.class);
         startActivity(intent);
     }

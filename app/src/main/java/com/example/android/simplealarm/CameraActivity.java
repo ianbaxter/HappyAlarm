@@ -1,21 +1,17 @@
 package com.example.android.simplealarm;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
@@ -32,7 +28,6 @@ import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.Size;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -40,7 +35,6 @@ import java.util.List;
 public class CameraActivity extends AppCompatActivity {
 
     private static String TAG = CameraActivity.class.getSimpleName();
-    private static final int REQUEST_STORAGE_PERMISSION = 1;
     private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
 
     private CameraView cameraView;
@@ -66,8 +60,6 @@ public class CameraActivity extends AppCompatActivity {
             }
         });
 
-        checkWriteExternalStoragePermissions();
-
         cameraView.addFrameProcessor(new FrameProcessor() {
             @Override
             public void process(@NonNull Frame frame) {
@@ -88,6 +80,7 @@ public class CameraActivity extends AppCompatActivity {
                 FirebaseVisionFaceDetectorOptions realTimeOpts =
                         new FirebaseVisionFaceDetectorOptions.Builder()
                                 .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                                .setMinFaceSize(0.15f)
                                 .build();
 
                 FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
@@ -100,7 +93,6 @@ public class CameraActivity extends AppCompatActivity {
                                     public void onSuccess(List<FirebaseVisionFace> faces) {
                                         if (faces.size() == 0) {
 //                                            cameraView.takePicture(); // For emulator testing only
-
                                             return;
                                         }
 
@@ -108,7 +100,7 @@ public class CameraActivity extends AppCompatActivity {
 
                                             if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
                                                 float smileProb = face.getSmilingProbability();
-                                                Log.i(TAG, "Smiling prob: " + smileProb);
+                                                Log.i(TAG, "Smiling probability: " + smileProb);
 
                                                 if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
                                                     if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
@@ -125,68 +117,35 @@ public class CameraActivity extends AppCompatActivity {
                                             }
                                         }
                                     }
-                                });
+                                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Exception" + e);
+                    }
+                });
             }
         });
     }
 
-    private void checkWriteExternalStoragePermissions() {
-        if (ContextCompat.checkSelfPermission(getApplicationContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    REQUEST_STORAGE_PERMISSION);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_STORAGE_PERMISSION:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
-                }
-        }
-    }
-
     private void savePhoto(@NonNull PictureResult result) {
-        File photoFile = null;
-        try {
-            photoFile = createImageFile();
-        } catch (IOException e) {
-            Log.e(TAG, "IOException: " + e);
-        }
+        File photoFile = createImageFile();
 
-        if (photoFile != null) {
-            Log.i(TAG, "Saving photo");
-            result.toFile(photoFile, new FileCallback() {
-                @Override
-                public void onFileReady(@Nullable File file) {
+        Log.i(TAG, "Saving photo to internal storage");
+        result.toFile(photoFile, new FileCallback() {
+            @Override
+            public void onFileReady(@Nullable File file) {
 
-                }
-            });
-        }
+            }
+        });
     }
 
-    private File createImageFile() throws IOException {
+    private File createImageFile() {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File file = new File(this.getFilesDir(), imageFileName + ".jpg");
 
-        String currentPhotoPath = file.getAbsolutePath();
-        return file;
+        return new File(this.getFilesDir(), imageFileName + ".jpg");
     }
-    /*private void galleryAddPic() {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File file = new File(currentPhotoPath);
-        Uri contentUri = Uri.fromFile(file);
-        mediaScanIntent.setData(contentUri);
-        this.sendBroadcast(mediaScanIntent);
-    }*/
 
     @Override
     protected void onPause() {

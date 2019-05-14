@@ -22,35 +22,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scrollbars="vertical"
-        tools:context=".MainActivity">
+        tools:mContext=".MainActivity">
 
     </com.example.android.simplealarm.adapters.EmptyRecyclerView>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_take_photo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:srcCompat="@drawable/baseline_camera_alt_24"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:onClick="startCameraActivity">
-
-    </com.google.android.material.floatingactionbutton.FloatingActionButton>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_gallery"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:srcCompat="@drawable/baseline_photo_library_24"
-        android:layout_margin="16dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:onClick="startGalleryActivity">
-
-    </com.google.android.material.floatingactionbutton.FloatingActionButton>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_alarm"

@@ -8,7 +8,6 @@
         android:required="true" />
 
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application
         android:allowBackup="true"
@@ -29,10 +28,15 @@
 
         <activity
             android:name=".GalleryActivity"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"/>
 
         <activity
-            android:name=".CameraActivity" />
+            android:name=".GalleryDetailActivity"
+            android:parentActivityName=".GalleryActivity" />
+
+        <activity
+            android:name=".CameraActivity"
+            android:theme="@style/AppThemeFullscreenNoActionBar"/>
 
         <receiver
             android:name=".AlarmReceiver"
@@ -42,6 +46,16 @@
         <service
             android:name=".sync.AlarmIntentService"
             android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths"/>
+        </provider>
 
         <meta-data
             android:name="com.google.firebase.ml.vision.DEPENDENCIES"
