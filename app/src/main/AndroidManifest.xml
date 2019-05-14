@@ -3,6 +3,12 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.android.simplealarm">
 
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_clock_on"
@@ -20,6 +26,18 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".GalleryActivity"
+            android:parentActivityName=".MainActivity"/>
+
+        <activity
+            android:name=".GalleryDetailActivity"
+            android:parentActivityName=".GalleryActivity" />
+
+        <activity
+            android:name=".CameraActivity"
+            android:theme="@style/AppThemeFullscreenNoActionBar"/>
+
         <receiver
             android:name=".AlarmReceiver"
             android:exported="false" >
@@ -28,6 +46,20 @@
         <service
             android:name=".sync.AlarmIntentService"
             android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths"/>
+        </provider>
+
+        <meta-data
+            android:name="com.google.firebase.ml.vision.DEPENDENCIES"
+            android:value="face" />
     </application>
 
 </manifest>

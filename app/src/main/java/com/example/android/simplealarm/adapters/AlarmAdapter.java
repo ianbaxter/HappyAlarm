@@ -1,8 +1,8 @@
 package com.example.android.simplealarm.adapters;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,16 +26,16 @@ import java.util.List;
  */
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
-    final private ListItemClickListener mOnClickListener;
+    final private AlarmItemClickListener alarmItemClickListener;
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
 
-    public AlarmAdapter(Context context, ListItemClickListener listener){
+    public AlarmAdapter(Context context, AlarmItemClickListener listener){
         mContext = context;
-        mOnClickListener = listener;
+        alarmItemClickListener = listener;
     }
 
-    public interface ListItemClickListener {
+    public interface AlarmItemClickListener {
         void onAlarmClick(int adapterPosition, int alarmEntryId);
     }
 
@@ -59,7 +59,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             int adapterPosition = getAdapterPosition();
             AlarmEntry alarmEntry = mAlarmEntries.get(getAdapterPosition());
             int alarmEntryId = alarmEntry.getId();
-            mOnClickListener.onAlarmClick(adapterPosition, alarmEntryId);
+            alarmItemClickListener.onAlarmClick(adapterPosition, alarmEntryId);
         }
     }
 
@@ -67,9 +67,9 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     @Override
     public AlarmViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        // Inflate the alarm_list_item to a view
+        // Inflate the item_alarm to a view
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.alarm_list_item, parent, false);
+                .inflate(R.layout.item_alarm, parent, false);
 
         return new AlarmViewHolder(view);
     }

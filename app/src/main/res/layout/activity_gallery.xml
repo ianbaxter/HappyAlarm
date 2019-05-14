@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/tv_empty_view_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="@string/empty_view_text_gallery"
+            android:textSize="25sp"
+            android:gravity="center">
+
+        </TextView>
+
+        <com.example.android.simplealarm.adapters.EmptyRecyclerView
+            android:id="@+id/recycler_view_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            tools:mContext=".GalleryActivity">
+
+        </com.example.android.simplealarm.adapters.EmptyRecyclerView>
+
+    </RelativeLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -16,7 +16,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static final String ALARM_ENTRY_REPEATING_KEY = "alarm_entry_repeating";
     private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
 
-    private static MediaPlayer mediaPlayer;
+    protected static MediaPlayer mediaPlayer;
 
     public AlarmReceiver() {}
 
@@ -82,6 +82,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     public static void stopAlarm() {
         mediaPlayer.stop();
         mediaPlayer.release();
+        mediaPlayer = null;
     }
 
     private AlarmEntry getAlarmEntryFromIntent(Intent intent, Context context) {
@@ -98,7 +99,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     private void startMediaPlayer(final Context context) {
         mediaPlayer = MediaPlayer.create(context, R.raw.alarm1);
-        mediaPlayer.setLooping(false);
+        mediaPlayer.setLooping(true);
         mediaPlayer.start();
 
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
