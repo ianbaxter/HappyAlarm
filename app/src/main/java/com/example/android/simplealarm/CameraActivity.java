@@ -63,67 +63,69 @@ public class CameraActivity extends AppCompatActivity {
         cameraView.addFrameProcessor(new FrameProcessor() {
             @Override
             public void process(@NonNull Frame frame) {
-                byte[] data = frame.getData();
-                int rotation = frame.getRotation() / 90;
-                Size size = frame.getSize();
+                if (frame != null) {
+                    byte[] data = frame.getData();
+                    int rotation = frame.getRotation() / 90;
+                    Size size = frame.getSize();
 
-                // Process
-                FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
-                        .setWidth(size.getWidth())
-                        .setHeight(size.getHeight())
-                        .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
-                        .setRotation(rotation)
-                        .build();
+                    // Process
+                    FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
+                            .setWidth(size.getWidth())
+                            .setHeight(size.getHeight())
+                            .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
+                            .setRotation(rotation)
+                            .build();
 
-                FirebaseVisionImage image = FirebaseVisionImage.fromByteArray(data, metadata);
+                    FirebaseVisionImage image = FirebaseVisionImage.fromByteArray(data, metadata);
 
-                FirebaseVisionFaceDetectorOptions realTimeOpts =
-                        new FirebaseVisionFaceDetectorOptions.Builder()
-                                .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-                                .setMinFaceSize(0.15f)
-                                .build();
+                    FirebaseVisionFaceDetectorOptions realTimeOpts =
+                            new FirebaseVisionFaceDetectorOptions.Builder()
+                                    .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                                    .setMinFaceSize(0.15f)
+                                    .build();
 
-                FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
-                        .getVisionFaceDetector(realTimeOpts);
+                    FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
+                            .getVisionFaceDetector(realTimeOpts);
 
-                detector.detectInImage(image)
-                        .addOnSuccessListener(
-                                new OnSuccessListener<List<FirebaseVisionFace>>() {
-                                    @Override
-                                    public void onSuccess(List<FirebaseVisionFace> faces) {
-                                        if (faces.size() == 0) {
+                    detector.detectInImage(image)
+                            .addOnSuccessListener(
+                                    new OnSuccessListener<List<FirebaseVisionFace>>() {
+                                        @Override
+                                        public void onSuccess(List<FirebaseVisionFace> faces) {
+                                            if (faces.size() == 0) {
 //                                            cameraView.takePicture(); // For emulator testing only
-                                            return;
-                                        }
+                                                return;
+                                            }
 
-                                        for (FirebaseVisionFace face : faces) {
+                                            for (FirebaseVisionFace face : faces) {
 
-                                            if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
-                                                float smileProb = face.getSmilingProbability();
-                                                Log.i(TAG, "Smiling probability: " + smileProb);
+                                                if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
+                                                    float smileProb = face.getSmilingProbability();
+                                                    Log.i(TAG, "Smiling probability: " + smileProb);
 
-                                                if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
-                                                    if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
-                                                        AlarmReceiver.stopAlarm();
-                                                        smileText.setVisibility(View.GONE);
-                                                        cameraView.takePicture();
-                                                    }
-                                                } else {
-                                                    if (smileProb > 0.9) {
-                                                        smileText.setVisibility(View.GONE);
-                                                        cameraView.takePicture();
+                                                    if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+                                                        if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
+                                                            AlarmReceiver.stopAlarm();
+                                                            smileText.setVisibility(View.GONE);
+                                                            cameraView.takePicture();
+                                                        }
+                                                    } else {
+                                                        if (smileProb > 0.9) {
+                                                            smileText.setVisibility(View.GONE);
+                                                            cameraView.takePicture();
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Exception" + e);
-                    }
-                });
+                                    })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    Log.e(TAG, "Exception" + e);
+                                }
+                            });
+                }
             }
         });
     }

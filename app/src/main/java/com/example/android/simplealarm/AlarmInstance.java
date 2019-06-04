@@ -4,7 +4,6 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.util.Log;
 
 import com.example.android.simplealarm.database.AlarmEntry;
@@ -22,11 +21,7 @@ public class AlarmInstance {
         long alarmTimeInMillis = getAlarmTimeInMillis(alarmEntry);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, alarmReceiverPendingIntent);
-        } else {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, alarmReceiverPendingIntent);
-        }
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, alarmTimeInMillis, alarmReceiverPendingIntent);
     }
 
     private PendingIntent getAlarmReceiverPendingIntent(Context context, AlarmEntry alarmEntry) {

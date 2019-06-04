@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
             }
         });
         String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
-        Toast.makeText(this, this.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, getString(R.string.alarm_set_message) + " " + timeUntilAlarm + " " + getString(R.string.alarm_set_message_2), Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -177,8 +177,16 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
             case R.id.action_photo:
                 startCameraActivity();
                 break;
+            case R.id.action_settings:
+                startSettingsActivity();
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void startSettingsActivity() {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     public void startGalleryActivity() {

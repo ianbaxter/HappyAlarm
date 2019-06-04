@@ -3,16 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_photo"
+        android:title="@string/action_photo"
+        android:orderInCategory="98"
+        android:icon="@drawable/baseline_camera_alt_24"
+        app:showAsAction="ifRoom"/>
+
+    <item
         android:id="@+id/action_gallery"
         android:title="@string/action_gallery"
-        android:orderInCategory="100"
+        android:orderInCategory="99"
         android:icon="@drawable/baseline_photo_library_24"
         app:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/action_photo"
-        android:title="@string/action_photo"
-        android:orderInCategory="99"
-        android:icon="@drawable/baseline_camera_alt_24"
-        app:showAsAction="ifRoom"/>
+        android:id="@+id/action_settings"
+        android:title="@string/action_settings"
+        android:orderInCategory="100"
+        app:showAsAction="never"/>
+
 </menu>

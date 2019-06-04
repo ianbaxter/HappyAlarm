@@ -17,21 +17,21 @@ import com.example.android.simplealarm.R;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
-import java.util.List;
+import java.util.ArrayList;
 
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder> {
-
-    private Context mContext;
-    private static List<File> mFiles;
 
     private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final int DETAIL_PHOTO_REQUEST = 1;
 
     private static final String TAG = GalleryAdapter.class.getSimpleName();
 
-    public GalleryAdapter(Context context, List<File> files) {
-        mContext = context;
-        mFiles = files;
+    private Context context;
+    private ArrayList<File> filesList;
+
+    public GalleryAdapter(Context context, ArrayList<File> files) {
+        this.context = context;
+        filesList = files;
     }
 
     class GalleryViewHolder extends RecyclerView.ViewHolder
@@ -51,9 +51,9 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
             int position = getAdapterPosition();
             Log.i(TAG, "Clicked position: " + position);
 
-            Intent intent = new Intent(mContext, GalleryDetailActivity.class);
+            Intent intent = new Intent(context, GalleryDetailActivity.class);
             intent.putExtra(GALLERY_POSITION_KEY, position);
-            ((Activity) mContext).startActivityForResult(intent, DETAIL_PHOTO_REQUEST);
+            ((Activity) context).startActivityForResult(intent, DETAIL_PHOTO_REQUEST);
         }
     }
 
@@ -69,16 +69,18 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
     @Override
     public void onBindViewHolder(@NonNull GalleryViewHolder holder, int position) {
         Picasso.get()
-                .load(mFiles.get(position))
+                .load(filesList.get(position))
+                .centerCrop()
+                .fit()
                 .placeholder(R.drawable.outline_image_24)
                 .into(holder.galleryImageView);
     }
 
     @Override
     public int getItemCount() {
-        if (mFiles == null) {
+        if (filesList == null) {
             return 0;
         }
-        return mFiles.size();
+        return filesList.size();
     }
 }

@@ -1,6 +1,7 @@
 package com.example.android.simplealarm.adapters;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -8,29 +9,39 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
 
+import com.example.android.simplealarm.R;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.util.List;
 
 public class ViewPagerAdapter extends PagerAdapter {
 
-    private Context mContext;
-    private File[] mFiles;
+    private Context context;
+    private List<File> filesList;
 
-    public ViewPagerAdapter(Context mContext, File[] mFiles) {
-        this.mContext = mContext;
-        this.mFiles = mFiles;
+    public ViewPagerAdapter(Context context, List<File> filesList) {
+        this.context = context;
+        this.filesList = filesList;
     }
 
     @NonNull
     @Override
     public Object instantiateItem(@NonNull ViewGroup container, int position) {
-        ImageView imageView = new ImageView(mContext);
-        Picasso.get()
-                .load(mFiles[position])
-                .fit()
-                .centerCrop()
-                .into(imageView);
+        ImageView imageView = new ImageView(context);
+        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            Picasso.get()
+                    .load(filesList.get(position))
+                    .fit()
+                    .centerCrop()
+                    .placeholder(R.drawable.outline_image_24)
+                    .into(imageView);
+        } else {
+            Picasso.get()
+                    .load(filesList.get(position))
+                    .placeholder(R.drawable.outline_image_24)
+                    .into(imageView);
+        }
         container.addView(imageView);
 
         return imageView;
@@ -38,7 +49,7 @@ public class ViewPagerAdapter extends PagerAdapter {
 
     @Override
     public int getCount() {
-        return mFiles.length;
+        return filesList.size();
     }
 
     @Override

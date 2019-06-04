@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,6 +21,9 @@ import androidx.viewpager.widget.ViewPager;
 import com.example.android.simplealarm.adapters.ViewPagerAdapter;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 public class GalleryDetailActivity extends AppCompatActivity {
 
@@ -27,7 +31,9 @@ public class GalleryDetailActivity extends AppCompatActivity {
     private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final String CURRENT_POSITION_KEY = "current_position";
 
-    private int mCurrentPosition;
+    private int currentPosition;
+
+    private List<File> fileList;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -36,18 +42,27 @@ public class GalleryDetailActivity extends AppCompatActivity {
         setTitle(null);
 
         File dir = this.getFilesDir();
-        File[] files = dir.listFiles();
-        mCurrentPosition = getPositionFromParentIntent();
+        File[] files;
+        try {
+            files = dir.listFiles();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+            }
+            fileList = Arrays.asList(files);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception: " + e);
+        }
+        currentPosition = getPositionFromParentIntent();
 
         ViewPager viewPager = findViewById(R.id.view_pager_gallery_detail);
         viewPager.setOffscreenPageLimit(4);
-        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this, files);
+        ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this, fileList);
         viewPager.setAdapter(viewPagerAdapter);
-        viewPager.setCurrentItem(mCurrentPosition);
+        viewPager.setCurrentItem(currentPosition);
         viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
-                mCurrentPosition = position;
+                currentPosition = position;
             }
         });
     }
@@ -77,8 +92,8 @@ public class GalleryDetailActivity extends AppCompatActivity {
 
     private void showDeleteDialog(Context context) {
         new AlertDialog.Builder(context)
-                .setTitle("Delete photo")
-                .setMessage("Are you sure you wish to delete this photo?")
+                .setTitle(R.string.alert_dialog_title_delete_photo)
+                .setMessage(R.string.alert_dialog_message_delete_photo)
                 .setPositiveButton(R.string.dialog_confirm_delete, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -90,11 +105,12 @@ public class GalleryDetailActivity extends AppCompatActivity {
     }
 
     public void deletePhoto() {
-        File file = getFileFromPosition(mCurrentPosition);
+        File file = fileList.get(currentPosition);
+
         boolean fileDeleted = file.delete();
         if (fileDeleted) {
             Intent resultIntent = new Intent();
-            resultIntent.putExtra(CURRENT_POSITION_KEY, mCurrentPosition);
+            resultIntent.putExtra(CURRENT_POSITION_KEY, currentPosition);
             setResult(Activity.RESULT_OK, resultIntent);
             finish();
         } else {
@@ -103,7 +119,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
     }
 
     public void sharePhoto() {
-        File file = getFileFromPosition(mCurrentPosition);
+        File file = fileList.get(currentPosition);
         Uri imageUri = FileProvider.getUriForFile(this,
                 this.getApplicationContext().getPackageName() + ".provider",
                 file);
@@ -112,7 +128,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
         shareIntent.setType("image/jpeg");
         shareIntent.putExtra(Intent.EXTRA_STREAM, imageUri);
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(shareIntent, "Share using"));
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.title_gallery_activity)));
     }
 
     private int getPositionFromParentIntent() {
@@ -122,11 +138,5 @@ public class GalleryDetailActivity extends AppCompatActivity {
             position = intent.getIntExtra(GALLERY_POSITION_KEY, 0);
         }
         return position;
-    }
-
-    private File getFileFromPosition(int position) {
-        File dir = this.getFilesDir();
-        File[] files = dir.listFiles();
-        return files[position];
     }
 }

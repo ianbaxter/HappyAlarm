@@ -44,7 +44,7 @@ public class NotificationUtils {
                 new NotificationCompat.Builder(context, ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY)
                         .setSmallIcon(R.drawable.outline_alarm_24)
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
-                        .setContentText("Swipe to snooze for 5 minutes")
+                        .setContentText(context.getString(R.string.notification_content_text))
                         .addAction(stopAlarmAction(context))
                         .setDeleteIntent(onDismissedIntent(context, alarmEntryId))
                         .setAutoCancel(true);
@@ -76,7 +76,7 @@ public class NotificationUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         return new NotificationCompat.Action((R.drawable.outline_alarm_off_24),
-                "Dismiss",
+                context.getString(R.string.notification_action_dismiss_title),
                 stopAlarmPendingIntent);
     }
 }
