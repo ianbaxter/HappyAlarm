@@ -24,4 +24,14 @@
 
     </com.example.android.simplealarm.adapters.EmptyRecyclerView>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_take_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/baseline_camera_alt_24"
+        android:layout_margin="16dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerInParent="true"
+        android:onClick="startCameraActivity"/>
+
 </RelativeLayout>

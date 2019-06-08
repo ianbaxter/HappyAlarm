@@ -14,6 +14,13 @@
         android:entries="@array/pref_snooze_time_option_labels"
         android:entryValues="@array/pref_snooze_time_option_values"/>
 
+    <androidx.preference.ListPreference
+        android:key="@string/pref_silence_time_key"
+        android:title="@string/pref_silence_time_label"
+        android:defaultValue="5"
+        android:entries="@array/pref_silence_time_option_labels"
+        android:entryValues="@array/pref_silence_time_option_values"/>
+
     <androidx.preference.CheckBoxPreference
         android:key="@string/pref_vibrate_key"
         android:title="@string/pref_vibrate_label"

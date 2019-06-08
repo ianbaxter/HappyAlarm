@@ -18,7 +18,7 @@ public class NotificationUtils {
     private static final int ALARM_SOUNDING_NOTIFICATION_ID = 9001;
     private static final int ACTION_STOP_ALARM_PENDING_INTENT_ID = 9002;
 
-    private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
+    private static final String ALARM_SNOOZED_NOTIFICATION_KEY = "alarm_snoozed_notification";
     private static final String ALARM_SOUNDING_NOTIFICATION_CHANNEL_KEY = "alarm_sounding_notification_channel";
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
 
@@ -58,7 +58,7 @@ public class NotificationUtils {
 
     private static PendingIntent onDismissedIntent(Context context, int alarmEntryId) {
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, NotificationUtils.ALARM_SOUNDING_NOTIFICATION_ID);
+        intent.putExtra(ALARM_SNOOZED_NOTIFICATION_KEY, NotificationUtils.ALARM_SOUNDING_NOTIFICATION_ID);
         intent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
 
         return PendingIntent.getBroadcast(context.getApplicationContext(),

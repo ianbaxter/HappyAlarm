@@ -9,6 +9,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -46,15 +48,19 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        alarmAdaptor = new AlarmAdapter(this, this);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
         EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
 
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+        alarmAdaptor = new AlarmAdapter(this, this);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(alarmAdaptor);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
+
+        DividerItemDecoration divider = new DividerItemDecoration(recyclerView.getContext(),
+                layoutManager.getOrientation());
+        recyclerView.addItemDecoration(divider);
 
         newItemTouchHelper().attachToRecyclerView(recyclerView);
 
@@ -66,7 +72,8 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     private ItemTouchHelper newItemTouchHelper() {
         return new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
             @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder viewHolder1) {
                 return false;
             }
 
@@ -174,9 +181,6 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
             case R.id.action_gallery:
                 startGalleryActivity();
                 break;
-            case R.id.action_photo:
-                startCameraActivity();
-                break;
             case R.id.action_settings:
                 startSettingsActivity();
                 break;
@@ -191,11 +195,6 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     public void startGalleryActivity() {
         Intent intent = new Intent(this, GalleryActivity.class);
-        startActivity(intent);
-    }
-
-    public void startCameraActivity() {
-        Intent intent = new Intent(this, CameraActivity.class);
         startActivity(intent);
     }
 }

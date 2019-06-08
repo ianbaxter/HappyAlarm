@@ -13,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
@@ -28,34 +29,61 @@ import java.util.List;
 public class GalleryDetailActivity extends AppCompatActivity {
 
     private static final String TAG = GalleryDetailActivity.class.getSimpleName();
+
     private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final String CURRENT_POSITION_KEY = "current_position";
 
-    private int currentPosition;
-
     private List<File> fileList;
+    private int currentPosition;
+    private ActionBar actionBar;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery_detail);
-        setTitle(null);
+        actionBar = getSupportActionBar();
+        ViewPager viewPager = findViewById(R.id.view_pager_gallery_detail);
 
+        createListOfFiles();
+        createView(viewPager);
+    }
+
+    private void setTitle(ActionBar actionBar, int position) {
+        String photoFileName = fileList.get(position).getName();
+        String[] parts = photoFileName.split("_");
+        String[] dateParts = parts[1].split("");
+        String[] timeParts = parts[2].split("");
+        String title = dateParts[7] + dateParts[8] + "/" + dateParts[5] + dateParts[6] + "/"
+                + dateParts[1] + dateParts[2] + dateParts[3] + dateParts[4] + "   "
+                + timeParts[1] + timeParts[2] + ":" + timeParts[3] + timeParts[4];
+
+        actionBar.setTitle(title);
+    }
+
+    private void createListOfFiles() {
         File dir = this.getFilesDir();
         File[] files;
         try {
             files = dir.listFiles();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+            } else {
+                Arrays.sort(files, new Comparator<File>(){
+                    public int compare(File f1, File f2)
+                    {
+                        return Long.compare(f2.lastModified(), f1.lastModified());
+                    } });
             }
             fileList = Arrays.asList(files);
         } catch (Exception e) {
             Log.e(TAG, "Exception: " + e);
         }
-        currentPosition = getPositionFromParentIntent();
+    }
 
-        ViewPager viewPager = findViewById(R.id.view_pager_gallery_detail);
-        viewPager.setOffscreenPageLimit(4);
+    private void createView(ViewPager viewPager) {
+        currentPosition = getPositionFromParentIntent();
+        setTitle(actionBar, currentPosition);
+        viewPager.setOffscreenPageLimit(3);
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this, fileList);
         viewPager.setAdapter(viewPagerAdapter);
         viewPager.setCurrentItem(currentPosition);
@@ -63,8 +91,18 @@ public class GalleryDetailActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 currentPosition = position;
+                setTitle(actionBar, currentPosition);
             }
         });
+    }
+
+    private int getPositionFromParentIntent() {
+        int position = 0;
+        if (getIntent() != null && getIntent().hasExtra(GALLERY_POSITION_KEY)) {
+            Intent intent = getIntent();
+            position = intent.getIntExtra(GALLERY_POSITION_KEY, 0);
+        }
+        return position;
     }
 
     @Override
@@ -77,7 +115,6 @@ public class GalleryDetailActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
         switch (id) {
             case R.id.action_delete:
                 showDeleteDialog(this);
@@ -86,7 +123,6 @@ public class GalleryDetailActivity extends AppCompatActivity {
                 sharePhoto();
                 break;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -106,7 +142,6 @@ public class GalleryDetailActivity extends AppCompatActivity {
 
     public void deletePhoto() {
         File file = fileList.get(currentPosition);
-
         boolean fileDeleted = file.delete();
         if (fileDeleted) {
             Intent resultIntent = new Intent();
@@ -121,22 +156,12 @@ public class GalleryDetailActivity extends AppCompatActivity {
     public void sharePhoto() {
         File file = fileList.get(currentPosition);
         Uri imageUri = FileProvider.getUriForFile(this,
-                this.getApplicationContext().getPackageName() + ".provider",
-                file);
+                this.getApplicationContext().getPackageName() + ".provider", file);
 
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("image/jpeg");
         shareIntent.putExtra(Intent.EXTRA_STREAM, imageUri);
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(shareIntent, getString(R.string.title_gallery_activity)));
-    }
-
-    private int getPositionFromParentIntent() {
-        int position = 0;
-        if (getIntent() != null && getIntent().hasExtra(GALLERY_POSITION_KEY)) {
-            Intent intent = getIntent();
-            position = intent.getIntExtra(GALLERY_POSITION_KEY, 0);
-        }
-        return position;
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.share_photo_title)));
     }
 }

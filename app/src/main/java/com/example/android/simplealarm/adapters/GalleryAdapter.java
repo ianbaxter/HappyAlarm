@@ -49,7 +49,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
         @Override
         public void onClick(View view) {
             int position = getAdapterPosition();
-            Log.i(TAG, "Clicked position: " + position);
 
             Intent intent = new Intent(context, GalleryDetailActivity.class);
             intent.putExtra(GALLERY_POSITION_KEY, position);

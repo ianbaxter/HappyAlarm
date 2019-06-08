@@ -13,4 +13,18 @@
         <item>"5"</item>
         <item>"10"</item>
     </array>
+
+    <array name="pref_silence_time_option_labels">
+        <item>@string/pref_silence_time_label_1_minute</item>
+        <item>@string/pref_silence_time_label_3_minutes</item>
+        <item>@string/pref_silence_time_label_5_minutes</item>
+        <item>@string/pref_silence_time_label_10_minutes</item>
+    </array>
+
+    <array name="pref_silence_time_option_values">
+        <item>"1"</item>
+        <item>"3"</item>
+        <item>"5"</item>
+        <item>"10"</item>
+    </array>
 </resources>

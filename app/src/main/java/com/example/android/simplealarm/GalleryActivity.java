@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -25,19 +26,25 @@ public class GalleryActivity extends AppCompatActivity {
     private static final String TAG = GalleryActivity.class.getSimpleName();
 
     private static final int DETAIL_PHOTO_REQUEST = 1;
+    private static final int OPEN_CAMERA_REQUEST = 2;
     private static final String CURRENT_POSITION_KEY = "current_position";
 
-    private ArrayList<File> filesList;
+    private ArrayList<File> fileArrayList;
     private GalleryAdapter galleryAdapter;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
+        setTitle(R.string.title_gallery_activity);
         TextView emptyView = findViewById(R.id.tv_empty_view_gallery);
         EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_gallery);
-        setTitle(R.string.title_gallery_activity);
 
+        createListOfFiles();
+        createView(emptyView, recyclerView);
+    }
+
+    private void createListOfFiles() {
         File dir = this.getFilesDir();
         File[] files;
         try {
@@ -48,14 +55,16 @@ public class GalleryActivity extends AppCompatActivity {
                 Arrays.sort(files, new Comparator<File>(){
                     public int compare(File f1, File f2)
                     {
-                        return Long.compare(f1.lastModified(), f2.lastModified());
+                        return Long.compare(f2.lastModified(), f1.lastModified());
                     } });
             }
-            filesList = new ArrayList<>(Arrays.asList(files));
+            fileArrayList = new ArrayList<>(Arrays.asList(files));
         } catch (Exception e) {
             Log.e(TAG, "Exception: " + e);
         }
+    }
 
+    private void createView(TextView emptyView, EmptyRecyclerView recyclerView) {
         RecyclerView.LayoutManager layoutManager;
         if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             layoutManager = new GridLayoutManager(this, 2);
@@ -63,7 +72,7 @@ public class GalleryActivity extends AppCompatActivity {
             layoutManager = new GridLayoutManager(this, 3);
         }
         recyclerView.setLayoutManager(layoutManager);
-        galleryAdapter = new GalleryAdapter(this, filesList);
+        galleryAdapter = new GalleryAdapter(this, fileArrayList);
         recyclerView.setAdapter(galleryAdapter);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
@@ -72,13 +81,40 @@ public class GalleryActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == DETAIL_PHOTO_REQUEST && resultCode == RESULT_OK) {
-            int deletedPosition;
+        if (requestCode == DETAIL_PHOTO_REQUEST && resultCode == RESULT_OK ) {
             if (data != null && data.hasExtra(CURRENT_POSITION_KEY)) {
-                deletedPosition = data.getIntExtra(CURRENT_POSITION_KEY, 0);
-                filesList.remove(deletedPosition);
+                int deletedPosition = data.getIntExtra(CURRENT_POSITION_KEY, 0);
+                fileArrayList.remove(deletedPosition);
                 galleryAdapter.notifyItemRemoved(deletedPosition);
             }
         }
+
+        if (requestCode == OPEN_CAMERA_REQUEST && resultCode == RESULT_OK) {
+            File dir = this.getFilesDir();
+            File[] files;
+            try {
+                files = dir.listFiles();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
+                } else {
+                    Arrays.sort(files, new Comparator<File>(){
+                        public int compare(File f1, File f2)
+                        {
+                            return Long.compare(f2.lastModified(), f1.lastModified());
+                        } });
+                }
+                ArrayList<File> tempFileArrayList = new ArrayList<>(Arrays.asList(files));
+                File newPhotoFile = tempFileArrayList.get(0);
+                fileArrayList.add(0, newPhotoFile);
+                galleryAdapter.notifyDataSetChanged();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception: " + e);
+            }
+        }
+    }
+
+    public void startCameraActivity(View view) {
+        Intent intent = new Intent(this, CameraActivity.class);
+        startActivityForResult(intent, OPEN_CAMERA_REQUEST);
     }
 }

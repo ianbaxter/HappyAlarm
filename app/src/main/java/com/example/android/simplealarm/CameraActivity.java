@@ -31,6 +31,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -56,6 +57,7 @@ public class CameraActivity extends AppCompatActivity {
             @Override
             public void onPictureTaken(@NonNull PictureResult result) {
                 savePhoto(result);
+                setResult(RESULT_OK, null);
                 finish();
             }
         });
@@ -104,13 +106,13 @@ public class CameraActivity extends AppCompatActivity {
                                                     Log.i(TAG, "Smiling probability: " + smileProb);
 
                                                     if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
-                                                        if (smileProb > 0.9 && AlarmReceiver.mediaPlayer != null) {
+                                                        if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
                                                             AlarmReceiver.stopAlarm();
                                                             smileText.setVisibility(View.GONE);
                                                             cameraView.takePicture();
                                                         }
                                                     } else {
-                                                        if (smileProb > 0.9) {
+                                                        if (smileProb > 0.85) {
                                                             smileText.setVisibility(View.GONE);
                                                             cameraView.takePicture();
                                                         }
@@ -133,17 +135,16 @@ public class CameraActivity extends AppCompatActivity {
     private void savePhoto(@NonNull PictureResult result) {
         File photoFile = createImageFile();
 
-        Log.i(TAG, "Saving photo to internal storage");
         result.toFile(photoFile, new FileCallback() {
             @Override
             public void onFileReady(@Nullable File file) {
-
+                Log.i(TAG, "Saving photo to internal storage");
             }
         });
     }
 
     private File createImageFile() {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.UK).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
 
         return new File(this.getFilesDir(), imageFileName + ".jpg");
