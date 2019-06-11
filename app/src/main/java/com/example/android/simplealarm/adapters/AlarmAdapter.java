@@ -1,5 +1,6 @@
 package com.example.android.simplealarm.adapters;
 
+import android.app.Activity;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -10,7 +11,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.Switch;
-import android.widget.Toast;
 
 import com.example.android.simplealarm.AlarmInstance;
 import com.example.android.simplealarm.AppExecutors;
@@ -18,6 +18,7 @@ import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.utilities.AlarmUtils;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
@@ -124,7 +125,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             private void setNewAlarm(AlarmEntry alarmEntry, String alarmTime) {
                 new AlarmInstance(mContext, alarmEntry);
                 String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(alarmTime);
-                Toast.makeText(mContext, mContext.getString(R.string.alarm_set_message) + ": " + timeUntilAlarm + " from now", Toast.LENGTH_LONG).show();
+                AlarmUtils.showTimeUntilAlarmSnack(mContext, timeUntilAlarm);
             }
         };
     }
@@ -151,7 +152,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                     });
 
                     if (isRepeating) {
-                        Toast.makeText(mContext, mContext.getString(R.string.alarm_repeating_message), Toast.LENGTH_LONG).show();
+                        RecyclerView recyclerView = ((Activity)mContext).findViewById(R.id.recycler_view_main);
+                        Snackbar.make(recyclerView, mContext.getString(R.string.alarm_repeating_message), Snackbar.LENGTH_LONG).show();
                     }
                 }
             }
@@ -194,6 +196,20 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             return 0;
         }
         return mAlarmEntries.size();
+    }
+
+    public void onItemRemove(Snackbar snackbar, int adapterPosition) {
+        AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+        snackbar.setAction(R.string.snackbar_delete_alarm_action, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mAlarmEntries.add(adapterPosition, alarmEntry);
+                        notifyItemInserted(adapterPosition);
+                    }
+                });
+        snackbar.show();
+        mAlarmEntries.remove(adapterPosition);
+        notifyItemRemoved(adapterPosition);
     }
 }
 

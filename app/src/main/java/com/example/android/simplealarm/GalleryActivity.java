@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.adapters.GalleryAdapter;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -39,9 +41,10 @@ public class GalleryActivity extends AppCompatActivity {
         setTitle(R.string.title_gallery_activity);
         TextView emptyView = findViewById(R.id.tv_empty_view_gallery);
         EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_gallery);
+        FloatingActionButton cameraFab = findViewById(R.id.fab_take_photo);
 
         createListOfFiles();
-        createView(emptyView, recyclerView);
+        createView(emptyView, recyclerView, cameraFab);
     }
 
     private void createListOfFiles() {
@@ -64,7 +67,7 @@ public class GalleryActivity extends AppCompatActivity {
         }
     }
 
-    private void createView(TextView emptyView, EmptyRecyclerView recyclerView) {
+    private void createView(TextView emptyView, EmptyRecyclerView recyclerView, FloatingActionButton fab) {
         RecyclerView.LayoutManager layoutManager;
         if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             layoutManager = new GridLayoutManager(this, 2);
@@ -76,6 +79,16 @@ public class GalleryActivity extends AppCompatActivity {
         recyclerView.setAdapter(galleryAdapter);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy < 0 && !fab.isShown()) {
+                    fab.show();
+                } else if (dy > 0 && fab.isShown()) {
+                    fab.hide();
+                }
+            }
+        });
     }
 
     @Override

@@ -10,7 +10,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CountDownTimer;
-import android.os.PowerManager;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
@@ -28,11 +27,10 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static final String TAG = AlarmReceiver.class.getSimpleName();
 
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
-    private static final String ALARM_ENTRY_REPEATING_KEY = "alarm_entry_repeating";
     private static final String ALARM_SNOOZED_NOTIFICATION_KEY = "alarm_snoozed_notification";
+    private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
 
     protected static MediaPlayer mediaPlayer;
-    private static PowerManager.WakeLock wakeLock;
     private static Vibrator vibrator;
     private static CountDownTimer countDownTimer;
 
@@ -42,79 +40,24 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(final Context context, final Intent intent) {
-        context.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
-
-        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
-                | PowerManager.ACQUIRE_CAUSES_WAKEUP, TAG);
-
         if (intent.getExtras() != null && intent.hasExtra(ALARM_ENTRY_ID_KEY)) {
             if (intent.hasExtra(ALARM_SNOOZED_NOTIFICATION_KEY)) {
-                stopAlarm();
+                stopAlarm(context);
+                snoozeAlarm(context, intent);
+            } else if (intent.hasExtra(ALARM_DISMISSED_NOTIFICATION_KEY)) {
 
-                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
-                        snoozeAlarm(alarmEntry);
-                    }
-
-                    private void snoozeAlarm(AlarmEntry alarmEntry) {
-                        SharedPreferences sharedPreferences =
-                                PreferenceManager.getDefaultSharedPreferences(context);
-
-                        int snoozeTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_snooze_time_key), "5"));
-
-                        String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(snoozeTime);
-                        alarmEntry.setTime(snoozedAlarmTime);
-                        new AlarmInstance(context, alarmEntry);
-                    }
-                });
+                int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                AlarmInstance.cancelAlarm(context, alarmEntryId);
+                NotificationUtils.clearAllNotifications(context);
+                checkIfRepeating(context, intent);
             } else {
-                wakeLock.acquire(600000);
                 triggerAlarm(context, intent);
-
-                boolean isAlarmRepeating = false;
-                if (intent.hasExtra(ALARM_ENTRY_REPEATING_KEY)) {
-                    isAlarmRepeating = intent.getBooleanExtra(ALARM_ENTRY_REPEATING_KEY, false);
-                }
-                if (isAlarmRepeating) {
-                    AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
-                            repeatAlarm(alarmEntry);
-                        }
-
-                        private void repeatAlarm(AlarmEntry alarmEntry) {
-                            String currentAlarmTime = alarmEntry.getTime();
-                            String newAlarmTime = AlarmUtils.newAlarmTime(currentAlarmTime, 24);
-                            alarmEntry.setTime(newAlarmTime);
-                            new AlarmInstance(context, alarmEntry);
-                        }
-                    });
-                } else {
-                    AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
-                            setAlarmOffIfCurrentlyOn(alarmEntry);
-                        }
-
-                        private void setAlarmOffIfCurrentlyOn(AlarmEntry alarmEntry) {
-                            if (alarmEntry.isAlarmOn()) {
-                                alarmEntry.setAlarmOn(false);
-                                AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-                                mDb.alarmDao().updateAlarm(alarmEntry);
-                            }
-                        }
-                    });
-                }
+                checkIfRepeating(context, intent);
             }
         }
     }
 
-    public static void stopAlarm() {
+    public static void stopAlarm(Context context) {
         if (isVibrating) {
             vibrator.cancel();
             isVibrating = false;
@@ -122,18 +65,67 @@ public class AlarmReceiver extends BroadcastReceiver {
         mediaPlayer.stop();
         mediaPlayer.release();
         mediaPlayer = null;
-        if (wakeLock.isHeld()) {
-            wakeLock.release();
-        }
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
+        NotificationUtils.clearAllNotifications(context);
+    }
+
+    private void snoozeAlarm(Context context, Intent intent) {
+        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
+                snoozeAlarm(alarmEntry);
+            }
+
+            private void snoozeAlarm(AlarmEntry alarmEntry) {
+                SharedPreferences sharedPreferences =
+                        PreferenceManager.getDefaultSharedPreferences(context);
+                int snoozeTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_snooze_time_key), "5"));
+
+                String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(snoozeTime);
+                alarmEntry.setTime(snoozedAlarmTime);
+                new AlarmInstance(context, alarmEntry);
+                NotificationUtils.snoozeAlarmNotification(context, alarmEntry.getId());
+            }
+        });
     }
 
     private AlarmEntry getAlarmEntryFromIntent(Intent intent, Context context) {
         int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
         AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
         return mDb.alarmDao().loadAlarmById(alarmEntryId);
+    }
+
+    private void checkIfRepeating(Context context, Intent intent) {
+        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+            @Override
+            public void run() {
+                AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
+                boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
+                if (isAlarmRepeating) {
+                    repeatAlarm(alarmEntry);
+                } else {
+                    setAlarmOffIfCurrentlyOn(alarmEntry);
+                }
+            }
+
+            private void repeatAlarm(AlarmEntry alarmEntry) {
+                String currentAlarmTime = alarmEntry.getTime();
+                String newAlarmTime = AlarmUtils.newAlarmTime(currentAlarmTime, 24);
+                alarmEntry.setTime(newAlarmTime);
+                new AlarmInstance(context, alarmEntry);
+            }
+
+            private void setAlarmOffIfCurrentlyOn(AlarmEntry alarmEntry) {
+                if (alarmEntry.isAlarmOn()) {
+                    alarmEntry.setAlarmOn(false);
+                    AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                    mDb.alarmDao().updateAlarm(alarmEntry);
+                }
+            }
+        });
     }
 
     private void triggerAlarm(Context context, Intent intent) {
@@ -183,9 +175,6 @@ public class AlarmReceiver extends BroadcastReceiver {
                 }
                 mediaPlayer.release();
                 NotificationUtils.clearAllNotifications(context);
-                if (wakeLock.isHeld()) {
-                    wakeLock.release();
-                }
                 if (countDownTimer != null) {
                     countDownTimer.cancel();
                 }
@@ -225,8 +214,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 if (mediaPlayer != null) {
                     if (mediaPlayer.isPlaying()) {
                         countDownTimer = null;
-                        stopAlarm();
-                        NotificationUtils.clearAllNotifications(context);
+                        stopAlarm(context);
                     }
                 }
             }

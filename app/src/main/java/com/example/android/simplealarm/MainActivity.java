@@ -21,7 +21,6 @@ import android.view.MenuItem;
 import android.view.View;
 
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
@@ -29,6 +28,8 @@ import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
@@ -42,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
 
     private AlarmAdapter alarmAdaptor;
+    private EmptyRecyclerView mRecyclerView;
     private AppDatabase mDb;
 
     @Override
@@ -49,24 +51,38 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
-        EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
+        mRecyclerView = findViewById(R.id.recycler_view_main);
+        FloatingActionButton newAlarmFab = findViewById(R.id.fab_add_alarm);
 
+        createView(emptyView, mRecyclerView, newAlarmFab);
+
+        mDb = AppDatabase.getInstance(getApplicationContext());
+
+        setupViewModel();
+    }
+
+    private void createView(TextView emptyView, EmptyRecyclerView recyclerView, FloatingActionButton fab) {
         alarmAdaptor = new AlarmAdapter(this, this);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(alarmAdaptor);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
+        newItemTouchHelper().attachToRecyclerView(recyclerView);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy < 0 && !fab.isShown()) {
+                    fab.show();
+                } else if (dy > 0 && fab.isShown()) {
+                    fab.hide();
+                }
+            }
+        });
 
         DividerItemDecoration divider = new DividerItemDecoration(recyclerView.getContext(),
                 layoutManager.getOrientation());
         recyclerView.addItemDecoration(divider);
-
-        newItemTouchHelper().attachToRecyclerView(recyclerView);
-
-        mDb = AppDatabase.getInstance(getApplicationContext());
-
-        setupViewModel();
     }
 
     private ItemTouchHelper newItemTouchHelper() {
@@ -79,25 +95,33 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
             @Override
             public void onSwiped(@NonNull final RecyclerView.ViewHolder viewHolder, int swipeDirection) {
-                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                int adapterPosition = viewHolder.getAdapterPosition();
+                List<AlarmEntry> originalAlarmEntries = AlarmAdapter.getAlarmEntries();
+                int originalAlarmEntriesSize = originalAlarmEntries.size();
+                AlarmEntry alarmEntry = originalAlarmEntries.get(adapterPosition);
+                Snackbar snackbar = Snackbar.make(mRecyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
+                snackbar.addCallback(new Snackbar.Callback() {
                     @Override
-                    public void run() {
-                        AlarmEntry alarmEntry = getAlarmEntryFromViewHolder();
-                        boolean isAlarmOn = alarmEntry.isAlarmOn();
+                    public void onDismissed(Snackbar transientBottomBar, int event) {
+                        List<AlarmEntry> newAlarmEntries = AlarmAdapter.getAlarmEntries();
+                        int newAlarmEntriesSize = newAlarmEntries.size();
+                        if (newAlarmEntriesSize < originalAlarmEntriesSize) {
+                            AppExecutors.getsInstance().diskIO().execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    boolean isAlarmOn = alarmEntry.isAlarmOn();
 
-                        if (isAlarmOn) {
-                            int alarmEntryId = alarmEntry.getId();
-                            AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
+                                    if (isAlarmOn) {
+                                        int alarmEntryId = alarmEntry.getId();
+                                        AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
+                                    }
+                                    mDb.alarmDao().deleteAlarm(alarmEntry);
+                                }
+                            });
                         }
-                        mDb.alarmDao().deleteAlarm(alarmEntry);
-                    }
-
-                    private AlarmEntry getAlarmEntryFromViewHolder() {
-                        int position = viewHolder.getAdapterPosition();
-                        List<AlarmEntry> alarmEntries = AlarmAdapter.getAlarmEntries();
-                        return alarmEntries.get(position);
                     }
                 });
+                alarmAdaptor.onItemRemove(snackbar, adapterPosition);
             }
         });
     }
@@ -163,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
             }
         });
         String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
-        Toast.makeText(this, getString(R.string.alarm_set_message) + " " + timeUntilAlarm + " " + getString(R.string.alarm_set_message_2), Toast.LENGTH_LONG).show();
+        AlarmUtils.showTimeUntilAlarmSnack(this, timeUntilAlarm);
     }
 
     @Override

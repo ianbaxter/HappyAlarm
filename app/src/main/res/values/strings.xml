@@ -1,13 +1,21 @@
 <resources>
     <string name="app_name">Smile Alarm</string>
-    <string name="alarm_set_message">Alarm set for</string>
-    <string name="alarm_set_message_2">from now</string>
+    <string name="alarm_set_message_hours_minutes">Alarm set for %1$s hours and %2$s minutes from now.</string>
+    <string name="alarm_set_message_hour_minutes">Alarm set for %1$s hour and %2$s minutes from now.</string>
+    <string name="alarm_set_message_hours_minute">Alarm set for %1$s hours and %2$s minute from now.</string>
+    <string name="alarm_set_message_hour_minute">Alarm set for %1$s hour and %2$s minute from now.</string>
+    <string name="alarm_set_message_hour">Alarm set for %1$s hour from now.</string>
+    <string name="alarm_set_message_hours">Alarm set for %1$s hours from now.</string>
+    <string name="alarm_set_message_minutes">Alarm set for %1$s minutes from now.</string>
+    <string name="alarm_set_message_minute">Alarm set for %1$s minute from now.</string>
+    <string name="alarm_set_message_less_than_minute">Alarm set for less than %1$s minute from now.</string>
     <string name="alarm_sounding_message">Alarm sounding</string>
+    <string name="alarm_snoozed_content_title">Alarm snoozed</string>
     <string name="alarm_notification_channel_name">Alarm notification channel</string>
     <string name="empty_view_text_main">No alarms</string>
     <string name="empty_view_text_gallery">No photos</string>
     <string name="description_repeat_alarm">Repeat Alarm</string>
-    <string name="alarm_repeating_message">Alarm will repeat daily</string>
+    <string name="alarm_repeating_message">Alarm will repeat daily.</string>
     <string name="smile_camera_text_view">Smile!</string>
     <string name="action_share">action_share</string>
     <string name="action_delete">action_delete</string>
@@ -40,6 +48,11 @@
     <string name="alert_dialog_title_delete_photo">Delete photo</string>
     <string name="alert_dialog_message_delete_photo">Are you sure you wish to delete this photo?</string>
     <string name="share_photo_title">Share using</string>
-    <string name="notification_content_text">Swipe to snooze</string>
+    <string name="notification_alarm_triggered_content_text">Smile!</string>
+    <string name="notification_alarm_snoozed_content_text_minute">Alarm snoozed for %1$s minute.</string>
+    <string name="notification_alarm_snoozed_content_text_minutes">Alarm snoozed for %1$s minutes.</string>
     <string name="notification_action_dismiss_title">Dismiss</string>
+    <string name="notification_action_snooze_title">Snooze</string>
+    <string name="snackbar_delete_alarm_text">Alarm deleted</string>
+    <string name="snackbar_delete_alarm_action">UNDO</string>
 </resources>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
 
     <com.otaliastudios.cameraview.CameraView
         android:id="@+id/view_camera"
@@ -11,11 +11,7 @@
         app:cameraAudio="off"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:keepScreenOn="true"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:keepScreenOn="true" />
 
     <TextView
         android:id="@+id/text_view_smile"
@@ -24,9 +20,34 @@
         android:text="@string/smile_camera_text_view"
         android:textSize="50sp"
         android:textStyle="bold"
-        android:textColor="@color/colorPrimary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        android:textColor="@color/colorAccent"
+        android:layout_alignParentTop="true"
+        android:layout_centerInParent="true" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <com.ebanx.swipebtn.SwipeButton
+        android:id="@+id/swipe_btn_alarm_snooze"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
+        app:inner_text="Swipe to snooze"
+        app:inner_text_size="16sp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerInParent="true"
+        app:inner_text_top_padding="18dp"
+        app:inner_text_bottom_padding="18dp"
+        app:inner_text_left_padding="20dp"
+        app:button_image_height="60dp"
+        app:button_image_width="100dp"
+        app:button_image_disabled="@drawable/outline_alarm_24"
+        app:button_image_enabled="@drawable/outline_snooze_24"
+        app:button_left_padding="20dp"
+        app:button_right_padding="20dp"
+        app:button_top_padding="20dp"
+        app:button_bottom_padding="20dp"
+        app:button_background="@drawable/shape_button_snooze"
+        app:initial_state="disabled"
+        app:has_activate_state="true"/>
+
+</RelativeLayout>

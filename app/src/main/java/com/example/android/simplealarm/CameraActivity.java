@@ -1,9 +1,13 @@
 package com.example.android.simplealarm;
 
+import android.app.KeyguardManager;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,6 +15,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.annotation.Nullable;
 
+import com.ebanx.swipebtn.OnStateChangeListener;
+import com.ebanx.swipebtn.SwipeButton;
+import com.example.android.simplealarm.utilities.NotificationUtils;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
@@ -40,6 +47,7 @@ public class CameraActivity extends AppCompatActivity {
 
     private CameraView cameraView;
     private TextView smileText;
+    private SwipeButton alarmButton;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,8 +55,31 @@ public class CameraActivity extends AppCompatActivity {
         setContentView(R.layout.activity_camera);
         smileText = findViewById(R.id.text_view_smile);
         smileText.setVisibility(View.VISIBLE);
+        alarmButton = findViewById(R.id.swipe_btn_alarm_snooze);
+        alarmButton.setOnStateChangeListener(new OnStateChangeListener() {
+            @Override
+            public void onStateChange(boolean active) {
+                snoozeFromCamera();
+            }
+        });
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            keyguardManager.requestDismissKeyguard(this, null);
+        } else {
+            this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        }
 
         final Intent intent = getIntent();
+        if (intent != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
+            alarmButton.setVisibility(View.VISIBLE);
+        } else {
+            alarmButton.setVisibility(View.GONE);
+        }
 
         cameraView = findViewById(R.id.view_camera);
         cameraView.setLifecycleOwner(this);
@@ -58,18 +89,22 @@ public class CameraActivity extends AppCompatActivity {
             public void onPictureTaken(@NonNull PictureResult result) {
                 savePhoto(result);
                 setResult(RESULT_OK, null);
-                finish();
+                if (intent != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
+                    finishAndRemoveTask();
+                } else {
+                    finish();
+                }
             }
         });
 
         cameraView.addFrameProcessor(new FrameProcessor() {
             @Override
             public void process(@NonNull Frame frame) {
-                if (frame != null) {
-                    byte[] data = frame.getData();
-                    int rotation = frame.getRotation() / 90;
-                    Size size = frame.getSize();
+                byte[] data = frame.getData();
+                int rotation = frame.getRotation() / 90;
+                Size size = frame.getSize();
 
+                if (size != null) {
                     // Process
                     FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
                             .setWidth(size.getWidth())
@@ -107,8 +142,9 @@ public class CameraActivity extends AppCompatActivity {
 
                                                     if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
                                                         if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
-                                                            AlarmReceiver.stopAlarm();
+                                                            AlarmReceiver.stopAlarm(getApplicationContext());
                                                             smileText.setVisibility(View.GONE);
+                                                            alarmButton.setVisibility(View.GONE);
                                                             cameraView.takePicture();
                                                         }
                                                     } else {
@@ -150,6 +186,12 @@ public class CameraActivity extends AppCompatActivity {
         return new File(this.getFilesDir(), imageFileName + ".jpg");
     }
 
+    public void snoozeFromCamera() {
+        int alarmEntryId = getIntent().getIntExtra(ALARM_DISMISS_KEY, 0);
+        NotificationUtils.snoozeAlarm(this, alarmEntryId);
+        finishAndRemoveTask();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -166,5 +208,14 @@ public class CameraActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         cameraView.destroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (getIntent() != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
+            // Do nothing
+        } else {
+            super.onBackPressed();
+        }
     }
 }
