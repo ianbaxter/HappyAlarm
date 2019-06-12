@@ -111,7 +111,7 @@ public class AlarmUtils {
                 minutes = "1";
                 Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_less_than_minute, minutes), Snackbar.LENGTH_LONG).show();
             }
-            if (minutes.equals("1")) {
+            else if (minutes.equals("1")) {
                 Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_minute, minutes), Snackbar.LENGTH_LONG).show();
             } else {
                 Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_minutes, minutes), Snackbar.LENGTH_LONG).show();

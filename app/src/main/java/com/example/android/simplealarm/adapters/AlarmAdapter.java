@@ -22,9 +22,6 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
-/**
- * This adapter creates and binds ViewHolders, that hold the alarm details, to a RecyclerView
- */
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
     final private AlarmItemClickListener alarmItemClickListener;
@@ -67,20 +64,12 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     @NonNull
     @Override
     public AlarmViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-
-        // Inflate the item_alarm to a view
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_alarm, parent, false);
 
         return new AlarmViewHolder(view);
     }
 
-    /**
-     * Called by the RecyclerView to display data at a specified position
-     *
-     * @param viewHolder The ViewHolder to bind data to
-     * @param position The position of the data in the database
-     */
     @Override
     public void onBindViewHolder(@NonNull final AlarmViewHolder viewHolder, int position) {
         AlarmEntry alarmEntry = mAlarmEntries.get(position);

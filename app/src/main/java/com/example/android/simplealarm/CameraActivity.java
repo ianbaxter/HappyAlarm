@@ -46,23 +46,38 @@ public class CameraActivity extends AppCompatActivity {
     private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
 
     private CameraView cameraView;
-    private TextView smileText;
-    private SwipeButton alarmButton;
+    private TextView clockText;
+    private SwipeButton snoozeSwipeButton;
+    private Intent intent;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        smileText = findViewById(R.id.text_view_smile);
-        smileText.setVisibility(View.VISIBLE);
-        alarmButton = findViewById(R.id.swipe_btn_alarm_snooze);
-        alarmButton.setOnStateChangeListener(new OnStateChangeListener() {
+        clockText = findViewById(R.id.text_clock_smile);
+        intent = getIntent();
+
+        setupSnoozeSwipeButton(intent);
+        showOnLockScreen();
+        setupCameraView(intent);
+    }
+
+    private void setupSnoozeSwipeButton(Intent intent) {
+        snoozeSwipeButton = findViewById(R.id.swipe_btn_alarm_snooze);
+        snoozeSwipeButton.setOnStateChangeListener(new OnStateChangeListener() {
             @Override
             public void onStateChange(boolean active) {
                 snoozeFromCamera();
             }
         });
+        if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+            snoozeSwipeButton.setVisibility(View.VISIBLE);
+        } else {
+            snoozeSwipeButton.setVisibility(View.GONE);
+        }
+    }
 
+    private void showOnLockScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);
@@ -73,30 +88,17 @@ public class CameraActivity extends AppCompatActivity {
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
                     WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
+    }
 
-        final Intent intent = getIntent();
-        if (intent != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
-            alarmButton.setVisibility(View.VISIBLE);
-        } else {
-            alarmButton.setVisibility(View.GONE);
-        }
-
+    private void setupCameraView(Intent intent) {
         cameraView = findViewById(R.id.view_camera);
         cameraView.setLifecycleOwner(this);
-
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(@NonNull PictureResult result) {
                 savePhoto(result);
-                setResult(RESULT_OK, null);
-                if (intent != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
-                    finishAndRemoveTask();
-                } else {
-                    finish();
-                }
             }
         });
-
         cameraView.addFrameProcessor(new FrameProcessor() {
             @Override
             public void process(@NonNull Frame frame) {
@@ -130,12 +132,9 @@ public class CameraActivity extends AppCompatActivity {
                                         @Override
                                         public void onSuccess(List<FirebaseVisionFace> faces) {
                                             if (faces.size() == 0) {
-//                                            cameraView.takePicture(); // For emulator testing only
                                                 return;
                                             }
-
                                             for (FirebaseVisionFace face : faces) {
-
                                                 if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
                                                     float smileProb = face.getSmilingProbability();
                                                     Log.i(TAG, "Smiling probability: " + smileProb);
@@ -143,13 +142,13 @@ public class CameraActivity extends AppCompatActivity {
                                                     if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
                                                         if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
                                                             AlarmReceiver.stopAlarm(getApplicationContext());
-                                                            smileText.setVisibility(View.GONE);
-                                                            alarmButton.setVisibility(View.GONE);
+                                                            clockText.setVisibility(View.GONE);
+                                                            snoozeSwipeButton.setVisibility(View.GONE);
                                                             cameraView.takePicture();
                                                         }
                                                     } else {
                                                         if (smileProb > 0.85) {
-                                                            smileText.setVisibility(View.GONE);
+                                                            clockText.setVisibility(View.GONE);
                                                             cameraView.takePicture();
                                                         }
                                                     }
@@ -170,11 +169,16 @@ public class CameraActivity extends AppCompatActivity {
 
     private void savePhoto(@NonNull PictureResult result) {
         File photoFile = createImageFile();
-
         result.toFile(photoFile, new FileCallback() {
             @Override
             public void onFileReady(@Nullable File file) {
-                Log.i(TAG, "Saving photo to internal storage");
+                Log.i(TAG, "Saved photo to internal storage");
+                setResult(RESULT_OK, null);
+                if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+                    finishAndRemoveTask();
+                } else {
+                    finish();
+                }
             }
         });
     }
@@ -187,7 +191,7 @@ public class CameraActivity extends AppCompatActivity {
     }
 
     public void snoozeFromCamera() {
-        int alarmEntryId = getIntent().getIntExtra(ALARM_DISMISS_KEY, 0);
+        int alarmEntryId = intent.getIntExtra(ALARM_DISMISS_KEY, 0);
         NotificationUtils.snoozeAlarm(this, alarmEntryId);
         finishAndRemoveTask();
     }
@@ -212,7 +216,7 @@ public class CameraActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (getIntent() != null && getIntent().hasExtra(ALARM_DISMISS_KEY)) {
+        if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
             // Do nothing
         } else {
             super.onBackPressed();

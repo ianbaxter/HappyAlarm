@@ -13,16 +13,17 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true" />
 
-    <TextView
-        android:id="@+id/text_view_smile"
+    <TextClock
+        android:id="@+id/text_clock_smile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/smile_camera_text_view"
-        android:textSize="50sp"
-        android:textStyle="bold"
-        android:textColor="@color/colorAccent"
+        android:textSize="70sp"
+        android:textColor="@color/white"
         android:layout_alignParentTop="true"
-        android:layout_centerInParent="true" />
+        android:layout_centerInParent="true"
+        android:layout_marginTop="30dp"
+        android:format12Hour="HH:mm"
+        android:format24Hour="HH:mm"/>
 
     <com.ebanx.swipebtn.SwipeButton
         android:id="@+id/swipe_btn_alarm_snooze"

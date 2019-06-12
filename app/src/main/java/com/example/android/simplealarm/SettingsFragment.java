@@ -21,10 +21,15 @@ public class SettingsFragment extends androidx.preference.PreferenceFragmentComp
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
         AudioManager audioManager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
-        int alarmMaxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+        int alarmMaxVolume = 1;
+        if (audioManager != null) {
+            alarmMaxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+        }
 
         SeekBarPreference seekBarPreference = findPreference(getActivity().getString(R.string.pref_volume_key));
-        seekBarPreference.setMax(alarmMaxVolume);
+        if (seekBarPreference != null) {
+            seekBarPreference.setMax(alarmMaxVolume);
+        }
 
         SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
         PreferenceScreen preferenceScreen = getPreferenceScreen();

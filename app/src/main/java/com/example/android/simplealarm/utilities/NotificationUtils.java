@@ -12,6 +12,7 @@ import android.preference.PreferenceManager;
 import androidx.core.app.NotificationCompat;
 
 import com.example.android.simplealarm.AlarmReceiver;
+import com.example.android.simplealarm.MainActivity;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.sync.AlarmIntentService;
 import com.example.android.simplealarm.sync.AlarmTasks;
@@ -21,6 +22,8 @@ public class NotificationUtils {
     private static final int ALARM_SOUNDING_NOTIFICATION_ID = 9001;
     private static final int ACTION_DISMISS_ALARM_PENDING_INTENT_ID = 9002;
     private static final int ACTION_STOP_AND_DISMISS_ALARM_PENDING_INTENT_ID = 9003;
+    private static final int ALARM_SNOOZED_NOTIFICATION_ID = 9004;
+    private static final int ALARM_STOP_PENDING_INTENT_ID = 9005;
 
     private static final String ALARM_SNOOZED_NOTIFICATION_KEY = "alarm_snoozed_notification";
     private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
@@ -54,8 +57,7 @@ public class NotificationUtils {
                         .addAction(snoozeAlarmAction(context, alarmEntryId))
 //                        .addAction(stopAndDismissAlarmAction(context)) CAMERA IS LEFT OPEN IF THIS IS USED
                         .setFullScreenIntent(stopAlarmOnNotification(context, alarmEntryId), true)
-                        .setOngoing(true)
-                        .setAutoCancel(true);
+                        .setOngoing(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             notificationBuilder.setPriority(NotificationManager.IMPORTANCE_HIGH);
@@ -66,11 +68,11 @@ public class NotificationUtils {
 
     private static NotificationCompat.Action snoozeAlarmAction(Context context, int alarmEntryId) {
         Intent snoozeIntent = new Intent(context, AlarmReceiver.class);
-        snoozeIntent.putExtra(ALARM_SNOOZED_NOTIFICATION_KEY, ALARM_SOUNDING_NOTIFICATION_ID);
+        snoozeIntent.putExtra(ALARM_SNOOZED_NOTIFICATION_KEY, ALARM_SNOOZED_NOTIFICATION_ID);
         snoozeIntent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
 
         PendingIntent snoozePendingIntent = PendingIntent.getBroadcast(context.getApplicationContext(),
-                ALARM_SOUNDING_NOTIFICATION_ID, snoozeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                ALARM_SNOOZED_NOTIFICATION_ID, snoozeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         return new NotificationCompat.Action((R.drawable.outline_snooze_24),
                 context.getString(R.string.notification_action_snooze_title),
@@ -100,14 +102,14 @@ public class NotificationUtils {
                 "com.example.android.simplealarm.CameraActivity");
 
         return PendingIntent.getActivity(context,
-                ALARM_SOUNDING_NOTIFICATION_ID,
+                ALARM_STOP_PENDING_INTENT_ID,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_CANCEL_CURRENT);
     }
 
     public static void snoozeAlarm(Context context, int alarmEntryId) {
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra(ALARM_SNOOZED_NOTIFICATION_KEY, ALARM_SOUNDING_NOTIFICATION_ID);
+        intent.putExtra(ALARM_SNOOZED_NOTIFICATION_KEY, ALARM_SNOOZED_NOTIFICATION_ID);
         intent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
         context.sendBroadcast(intent);
     }
@@ -139,14 +141,14 @@ public class NotificationUtils {
                         .setContentTitle(context.getString(R.string.alarm_snoozed_content_title))
                         .setContentText(contentText)
                         .addAction(dismissAlarmAction(context, alarmEntryId))
-                        .setOngoing(true)
-                        .setAutoCancel(true);
+                        .setContentIntent(mainActivityIntent(context))
+                        .setOngoing(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             notificationBuilder.setPriority(NotificationManager.IMPORTANCE_HIGH);
         }
 
-        notificationManager.notify(ALARM_SOUNDING_NOTIFICATION_ID, notificationBuilder.build());
+        notificationManager.notify(ALARM_SNOOZED_NOTIFICATION_ID, notificationBuilder.build());
     }
 
     private static NotificationCompat.Action dismissAlarmAction(Context context, int alarmEntryId) {
@@ -160,5 +162,15 @@ public class NotificationUtils {
         return new NotificationCompat.Action((R.drawable.outline_alarm_off_24),
                 context.getString(R.string.notification_action_dismiss_title),
                 dismissAlarmPendingIntent);
+    }
+
+    private static PendingIntent mainActivityIntent(Context context) {
+        Intent intent = new Intent(context, MainActivity.class);
+
+        return PendingIntent.getActivity(context,
+                ALARM_SNOOZED_NOTIFICATION_ID,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+        );
     }
 }

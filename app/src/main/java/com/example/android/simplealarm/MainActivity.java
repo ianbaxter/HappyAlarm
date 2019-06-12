@@ -38,26 +38,24 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final String TIME_PICKER_FRAGMENT_ID = "timePicker";
-    private static final String CLICKED_ALARM_ID_KEY = "clickedAlarmId";
-    private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
+    private static final String TIME_PICKER_FRAGMENT_ID = "time_picker";
+    private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
+    private static final String CLICKED_ALARM_POSITION_KEY = "clicked_alarm_position";
 
     private AlarmAdapter alarmAdaptor;
-    private EmptyRecyclerView mRecyclerView;
-    private AppDatabase mDb;
+    private EmptyRecyclerView recyclerView;
+    private AppDatabase appDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
-        mRecyclerView = findViewById(R.id.recycler_view_main);
+        recyclerView = findViewById(R.id.recycler_view_main);
         FloatingActionButton newAlarmFab = findViewById(R.id.fab_add_alarm);
 
-        createView(emptyView, mRecyclerView, newAlarmFab);
-
-        mDb = AppDatabase.getInstance(getApplicationContext());
-
+        createView(emptyView, recyclerView, newAlarmFab);
+        appDatabase = AppDatabase.getInstance(getApplicationContext());
         setupViewModel();
     }
 
@@ -99,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 List<AlarmEntry> originalAlarmEntries = AlarmAdapter.getAlarmEntries();
                 int originalAlarmEntriesSize = originalAlarmEntries.size();
                 AlarmEntry alarmEntry = originalAlarmEntries.get(adapterPosition);
-                Snackbar snackbar = Snackbar.make(mRecyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
+                Snackbar snackbar = Snackbar.make(recyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
                 snackbar.addCallback(new Snackbar.Callback() {
                     @Override
                     public void onDismissed(Snackbar transientBottomBar, int event) {
@@ -115,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                                         int alarmEntryId = alarmEntry.getId();
                                         AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
                                     }
-                                    mDb.alarmDao().deleteAlarm(alarmEntry);
+                                    appDatabase.alarmDao().deleteAlarm(alarmEntry);
                                 }
                             });
                         }
@@ -162,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                mDb.alarmDao().insertAlarm(alarmEntry);
+                appDatabase.alarmDao().insertAlarm(alarmEntry);
             }
         });
     }
@@ -172,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
                 alarmEntry.setTime(time);
 
                 boolean isAlarmOn = alarmEntry.isAlarmOn();
@@ -182,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                     alarmEntry.setAlarmOn(true);
                 }
 
-                mDb.alarmDao().updateAlarm(alarmEntry);
+                appDatabase.alarmDao().updateAlarm(alarmEntry);
                 new AlarmInstance(MainActivity.this, alarmEntry);
             }
         });

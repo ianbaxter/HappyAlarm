@@ -20,8 +20,8 @@ public class SetTimeFragment extends DialogFragment implements TimePickerDialog.
     private int alarmEntryId;
     private boolean newAlarm = true;
 
-    private static final String CLICKED_ALARM_ID_KEY = "clickedAlarmId";
-    private static final String CLICKED_ALARM_POSITION_KEY = "clickedAlarmPosition";
+    private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
+    private static final String CLICKED_ALARM_POSITION_KEY = "clicked_alarm_position";
 
     @NonNull
     @Override
