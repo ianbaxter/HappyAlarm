@@ -152,9 +152,7 @@ public class NotificationUtils {
     }
 
     private static NotificationCompat.Action dismissAlarmAction(Context context, int alarmEntryId) {
-        Intent dismissAlarmIntent = new Intent(context, AlarmReceiver.class);
-        dismissAlarmIntent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, ACTION_DISMISS_ALARM_PENDING_INTENT_ID);
-        dismissAlarmIntent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
+        Intent dismissAlarmIntent = getDismissSnoozeIntent(context, alarmEntryId);
 
         PendingIntent dismissAlarmPendingIntent = PendingIntent.getBroadcast(context.getApplicationContext(),
                 ACTION_DISMISS_ALARM_PENDING_INTENT_ID, dismissAlarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -162,6 +160,13 @@ public class NotificationUtils {
         return new NotificationCompat.Action((R.drawable.outline_alarm_off_24),
                 context.getString(R.string.notification_action_dismiss_title),
                 dismissAlarmPendingIntent);
+    }
+
+    public static Intent getDismissSnoozeIntent(Context context, int alarmEntryId) {
+        Intent dismissAlarmIntent = new Intent(context, AlarmReceiver.class);
+        dismissAlarmIntent.putExtra(ALARM_DISMISSED_NOTIFICATION_KEY, ACTION_DISMISS_ALARM_PENDING_INTENT_ID);
+        dismissAlarmIntent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
+        return dismissAlarmIntent;
     }
 
     private static PendingIntent mainActivityIntent(Context context) {

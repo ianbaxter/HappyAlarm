@@ -15,6 +15,8 @@
     <string name="empty_view_text_main">No alarms</string>
     <string name="empty_view_text_gallery">No photos</string>
     <string name="description_repeat_alarm">Repeat Alarm</string>
+    <string name="description_dismiss_alarm">Dismiss Alarm</string>
+    <string name="description_ringtone_picker">Ringtone Picker</string>
     <string name="alarm_repeating_message">Alarm will repeat daily.</string>
     <string name="smile_camera_text_view">Smile!</string>
     <string name="action_share">action_share</string>
@@ -55,4 +57,8 @@
     <string name="notification_action_snooze_title">Snooze</string>
     <string name="snackbar_delete_alarm_text">Alarm deleted</string>
     <string name="snackbar_delete_alarm_action">UNDO</string>
+    <string name="ringtone_picker_title">Alarm sound</string>
+    <string name="button_dismiss_snooze_text">Snoozed</string>
+    <string name="description_down_arrow">Expand alarm details</string>
+    <string name="description_up_arrow">Shrink alarm details</string>
 </resources>

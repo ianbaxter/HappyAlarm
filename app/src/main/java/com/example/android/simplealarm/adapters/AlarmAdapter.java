@@ -4,50 +4,88 @@ import android.app.Activity;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.content.Intent;
+import android.database.Cursor;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
+import android.preference.PreferenceManager;
+import android.provider.OpenableColumns;
+import android.transition.TransitionManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 
 import com.example.android.simplealarm.AlarmInstance;
+import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.AppExecutors;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.utilities.AlarmUtils;
+import com.example.android.simplealarm.utilities.NotificationUtils;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
-    final private AlarmItemClickListener alarmItemClickListener;
+    private static final String TAG = AlarmAdapter.class.getSimpleName();
+
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
+    private RecyclerView mRecyclerView;
+    private AlarmItemClickListener alarmItemClickListener;
+    private RingtoneItemClickListener ringtoneItemClickListener;
+    private int expandedPosition = -1;
 
-    public AlarmAdapter(Context context, AlarmItemClickListener listener){
+    public AlarmAdapter(Context context, RecyclerView recyclerView){
         mContext = context;
-        alarmItemClickListener = listener;
+        mRecyclerView = recyclerView;
+
+        try {
+            alarmItemClickListener = (AlarmItemClickListener) context;
+            ringtoneItemClickListener = (RingtoneItemClickListener) context;
+        } catch (ClassCastException ex) {
+            Log.e(TAG, "ClassCastException: " + ex);
+        }
     }
 
     public interface AlarmItemClickListener {
         void onAlarmClick(int adapterPosition, int alarmEntryId);
     }
 
+    public interface RingtoneItemClickListener {
+        void onRingtoneClick(int position, AlarmEntry alarmEntry);
+    }
+
     class AlarmViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener {
-        public Button alarmTimeButton;
-        public Switch alarmSwitch;
-        public CheckBox alarmRepeatButton;
+        private Button alarmTimeButton;
+        private Switch alarmSwitch;
+        private CheckBox alarmRepeatButton;
+        private Button alarmDismissSnoozeButton;
+        private Button alarmRingtoneButton;
+        private ImageView alarmDownArrow;
+        private ImageView alarmUpArrow;
 
-        public AlarmViewHolder(View alarmView) {
+        private AlarmViewHolder(View alarmView) {
             super(alarmView);
             alarmTimeButton = alarmView.findViewById(R.id.button_alarm_time);
             alarmSwitch = alarmView.findViewById(R.id.switch_alarm);
             alarmRepeatButton = alarmView.findViewById(R.id.checkbox_repeat);
+            alarmDismissSnoozeButton = alarmView.findViewById(R.id.button_dismiss_snooze);
+            alarmRingtoneButton = alarmView.findViewById(R.id.button_pick_ringtone);
+            alarmDownArrow = alarmView.findViewById(R.id.image_arrow_down);
+            alarmUpArrow = alarmView.findViewById(R.id.image_arrow_up);
 
             alarmTimeButton.setOnClickListener(this);
         }
@@ -76,13 +114,57 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         String alarmTime = alarmEntry.getTime();
         boolean isAlarmOn = alarmEntry.isAlarmOn();
         boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
+        boolean isAlarmSnoozed = alarmEntry.isAlarmSnoozed();
 
         viewHolder.alarmTimeButton.setText(alarmTime);
         viewHolder.alarmSwitch.setChecked(isAlarmOn);
         viewHolder.alarmRepeatButton.setChecked(isAlarmRepeating);
 
+        String ringtonePath = alarmEntry.getRingtonePath();
+        Uri ringtonePathUri = Uri.parse(ringtonePath);
+        Ringtone ringtone = RingtoneManager.getRingtone(mContext, ringtonePathUri);
+        String ringtoneTitle = ringtone.getTitle(mContext);
+        viewHolder.alarmRingtoneButton.setText(ringtoneTitle);
+
         viewHolder.alarmSwitch.setOnCheckedChangeListener(getSwitchListener(viewHolder));
         viewHolder.alarmRepeatButton.setOnCheckedChangeListener(getRepeatButtonListener(viewHolder));
+
+        viewHolder.alarmRingtoneButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ringtoneItemClickListener.onRingtoneClick(position, alarmEntry);
+            }
+        });
+
+        viewHolder.alarmDismissSnoozeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int alarmEntryId = alarmEntry.getId();
+                Intent dismissAlarmIntent = NotificationUtils.getDismissSnoozeIntent(mContext, alarmEntryId);
+                mContext.sendBroadcast(dismissAlarmIntent);
+                alarmEntry.setAlarmSnoozed(false);
+                viewHolder.alarmDismissSnoozeButton.setVisibility(View.GONE);
+            }
+        });
+
+        if (isAlarmSnoozed) {
+            viewHolder.alarmDismissSnoozeButton.setVisibility(View.VISIBLE);
+        }
+
+        final boolean isExpanded = position==expandedPosition;
+//        viewHolder.alarmDismissSnoozeButton.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.alarmRingtoneButton.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.alarmDownArrow.setVisibility(isExpanded?View.GONE:View.VISIBLE);
+        viewHolder.alarmUpArrow.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.itemView.setActivated(isExpanded);
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                expandedPosition = isExpanded ? -1:position;
+                TransitionManager.beginDelayedTransition(mRecyclerView);
+                notifyDataSetChanged();
+            }
+        });
     }
 
     @NonNull
@@ -167,6 +249,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
 
     private void updateAlarmEntry(AlarmEntry alarmEntry) {
         AppDatabase mDb = AppDatabase.getInstance(mContext);
+
         mDb.alarmDao().updateAlarm(alarmEntry);
     }
 
