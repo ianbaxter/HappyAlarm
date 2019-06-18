@@ -1,5 +1,7 @@
 package com.example.android.simplealarm;
 
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
@@ -18,6 +20,7 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
+
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -37,19 +40,23 @@ import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmItemClickListener,
-        AlarmAdapter.RingtoneItemClickListener, SetTimeFragment.TimeDialogListener {
+public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmTimeClickListener,
+        AlarmAdapter.RingtoneItemClickListener, AlarmAdapter.AlarmItemExpandClickListener, SetTimeFragment.TimeDialogListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final String TIME_PICKER_FRAGMENT_ID = "time_picker";
     private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
     private static final String CLICKED_ALARM_POSITION_KEY = "clicked_alarm_position";
+    private static final String SAVED_EXPANDED_POSITION_KEY = "saved_expanded_position";
     private static final int RINGTONE_PICKER = 0;
 
     private AlarmAdapter alarmAdaptor;
     private EmptyRecyclerView recyclerView;
     private AppDatabase appDatabase;
+
+    private int clickedAlarmRingtonePosition;
+    private int savedExpandedPosition = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,13 +66,25 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         recyclerView = findViewById(R.id.recycler_view_main);
         FloatingActionButton newAlarmFab = findViewById(R.id.fab_add_alarm);
 
+        if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_EXPANDED_POSITION_KEY)) {
+            savedExpandedPosition = savedInstanceState.getInt(SAVED_EXPANDED_POSITION_KEY, -1);
+        }
+
         createView(emptyView, recyclerView, newAlarmFab);
         appDatabase = AppDatabase.getInstance(getApplicationContext());
         setupViewModel();
     }
 
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putInt(SAVED_EXPANDED_POSITION_KEY, savedExpandedPosition);
+    }
+
     private void createView(TextView emptyView, EmptyRecyclerView recyclerView, FloatingActionButton fab) {
-        alarmAdaptor = new AlarmAdapter(this, recyclerView);
+        alarmAdaptor = new AlarmAdapter(this, savedExpandedPosition);
+        alarmAdaptor.setHasStableIds(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(alarmAdaptor);
@@ -98,33 +117,9 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
             @Override
             public void onSwiped(@NonNull final RecyclerView.ViewHolder viewHolder, int swipeDirection) {
-                int adapterPosition = viewHolder.getAdapterPosition();
-                List<AlarmEntry> originalAlarmEntries = AlarmAdapter.getAlarmEntries();
-                int originalAlarmEntriesSize = originalAlarmEntries.size();
-                AlarmEntry alarmEntry = originalAlarmEntries.get(adapterPosition);
+                int position = viewHolder.getAdapterPosition();
                 Snackbar snackbar = Snackbar.make(recyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
-                snackbar.addCallback(new Snackbar.Callback() {
-                    @Override
-                    public void onDismissed(Snackbar transientBottomBar, int event) {
-                        List<AlarmEntry> newAlarmEntries = AlarmAdapter.getAlarmEntries();
-                        int newAlarmEntriesSize = newAlarmEntries.size();
-                        if (newAlarmEntriesSize < originalAlarmEntriesSize) {
-                            AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    boolean isAlarmOn = alarmEntry.isAlarmOn();
-
-                                    if (isAlarmOn) {
-                                        int alarmEntryId = alarmEntry.getId();
-                                        AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
-                                    }
-                                    appDatabase.alarmDao().deleteAlarm(alarmEntry);
-                                }
-                            });
-                        }
-                    }
-                });
-                alarmAdaptor.onItemRemove(snackbar, adapterPosition);
+                alarmAdaptor.onItemRemove(snackbar, position, appDatabase);
             }
         });
     }
@@ -138,11 +133,17 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 alarmAdaptor.setAlarmEntries(alarmEntries);
             }
         });
+
     }
 
     @Override
-    public void onAlarmClick(int adapterPosition, int alarmEntryId) {
+    public void onAlarmTimeClick(int adapterPosition, int alarmEntryId) {
         updateTimePickerDialog(adapterPosition, alarmEntryId);
+    }
+
+    @Override
+    public void onAlarmItemExpandClick(int expandedPosition) {
+        savedExpandedPosition = expandedPosition;
     }
 
     @Override
@@ -156,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, defaultRingtone);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-        intent.putExtra(CLICKED_ALARM_POSITION_KEY, position);
+        clickedAlarmRingtonePosition = position;
         startActivityForResult(intent, RINGTONE_PICKER);
     }
 
@@ -164,15 +165,13 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == RINGTONE_PICKER && resultCode == RESULT_OK) {
-            int position = -1;
             Uri ringtoneUri = null;
             if (data != null) {
-                position = data.getIntExtra(CLICKED_ALARM_POSITION_KEY, 0);
                 ringtoneUri = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
             }
-            if (position != -1 && ringtoneUri != null) {
+            if (ringtoneUri != null) {
                 String ringtonePath = ringtoneUri.toString();
-                AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(position);
+                AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(clickedAlarmRingtonePosition);
                 alarmEntry.setRingtonePath(ringtonePath);
                 AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                     @Override
@@ -187,23 +186,38 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     }
 
     public void updateTimePickerDialog(int adapterPosition, int alarmEntryId) {
-        DialogFragment newFragment = new SetTimeFragment();
+        DialogFragment setTimeFragment = new SetTimeFragment();
         Bundle bundle = new Bundle();
         bundle.putInt(CLICKED_ALARM_POSITION_KEY, adapterPosition);
         bundle.putInt(CLICKED_ALARM_ID_KEY, alarmEntryId);
-        newFragment.setArguments(bundle);
-        newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
+        setTimeFragment.setArguments(bundle);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(setTimeFragment, TIME_PICKER_FRAGMENT_ID);
+
+        DialogFragment fragment = (SetTimeFragment) getSupportFragmentManager().findFragmentByTag(TIME_PICKER_FRAGMENT_ID);
+        if (fragment == null ) {
+            fragmentTransaction.commit();
+        }
     }
 
     public void newTimePickerDialog(View view) {
-        DialogFragment newFragment = new SetTimeFragment();
-        newFragment.show(getSupportFragmentManager(), TIME_PICKER_FRAGMENT_ID);
+        DialogFragment setTimeFragment = new SetTimeFragment();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(setTimeFragment, TIME_PICKER_FRAGMENT_ID);
+
+        DialogFragment fragment = (SetTimeFragment) getSupportFragmentManager().findFragmentByTag(TIME_PICKER_FRAGMENT_ID);
+        if (fragment == null ) {
+            fragmentTransaction.commit();
+        }
     }
 
     @Override
     public void onFinishNewAlarm(String time) {
         String defaultTone = "android.resource://com.example.android.simplealarm/" + R.raw.alarm1;
-        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false);
+        boolean[] dayRepeating = {false,false,false,false,false,false,false};
+        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, dayRepeating);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {

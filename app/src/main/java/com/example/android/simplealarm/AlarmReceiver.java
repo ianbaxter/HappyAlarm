@@ -79,18 +79,17 @@ public class AlarmReceiver extends BroadcastReceiver {
                 int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
                 AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
                 AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
-                snooze(alarmEntry);
+                alarmEntry.setAlarmSnoozed(true);
                 mDb.alarmDao().updateAlarm(alarmEntry);
+                snooze(alarmEntry);
             }
 
             private void snooze(AlarmEntry alarmEntry) {
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
                 int snoozeTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_snooze_time_key), "5"));
-
                 String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(snoozeTime);
                 alarmEntry.setTime(snoozedAlarmTime);
-                alarmEntry.setAlarmSnoozed(true);
                 new AlarmInstance(context, alarmEntry);
                 NotificationUtils.snoozeAlarmNotification(context, alarmEntry.getId());
             }
@@ -104,12 +103,14 @@ public class AlarmReceiver extends BroadcastReceiver {
                 int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
                 AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
                 AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                alarmEntry.setAlarmSnoozed(false);
                 boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
                 if (isAlarmRepeating) {
                     repeatAlarm(alarmEntry);
                 } else {
                     setAlarmOffIfCurrentlyOn(alarmEntry);
                 }
+                mDb.alarmDao().updateAlarm(alarmEntry);
             }
 
             private void repeatAlarm(AlarmEntry alarmEntry) {
@@ -122,8 +123,6 @@ public class AlarmReceiver extends BroadcastReceiver {
             private void setAlarmOffIfCurrentlyOn(AlarmEntry alarmEntry) {
                 if (alarmEntry.isAlarmOn()) {
                     alarmEntry.setAlarmOn(false);
-                    AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-                    mDb.alarmDao().updateAlarm(alarmEntry);
                 }
             }
         });

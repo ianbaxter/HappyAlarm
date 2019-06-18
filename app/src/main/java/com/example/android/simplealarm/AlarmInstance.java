@@ -25,8 +25,7 @@ public class AlarmInstance {
         Intent alarmIntent = new Intent(context, AlarmReceiver.class);
         int alarmEntryId = alarmEntry.getId();
         alarmIntent.putExtra(ALARM_ENTRY_ID_KEY, alarmEntryId);
-        return PendingIntent.getBroadcast(context, alarmEntryId,
-                alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return PendingIntent.getBroadcast(context, alarmEntryId, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     private long getAlarmTimeInMillis(AlarmEntry alarmEntry) {

@@ -61,4 +61,14 @@
     <string name="button_dismiss_snooze_text">Snoozed</string>
     <string name="description_down_arrow">Expand alarm details</string>
     <string name="description_up_arrow">Shrink alarm details</string>
+    <string name="checkbox_repeat_monday_text">M</string>
+    <string name="checkbox_repeat_text">Repeat</string>
+    <string name="snooze_dismiss_minute">Snoozed for %1$s minute</string>
+    <string name="snooze_dismiss_minutes">Snoozed for %1$s minutes</string>
+    <string name="checkbox_repeat_tuesday_text">T</string>
+    <string name="checkbox_repeat_wednesday_text">W</string>
+    <string name="checkbox_repeat_thursday_text">T</string>
+    <string name="checkbox_repeat_friday_text">F</string>
+    <string name="checkbox_repeat_saturday_text">S</string>
+    <string name="checkbox_repeat_sunday_text">S</string>
 </resources>

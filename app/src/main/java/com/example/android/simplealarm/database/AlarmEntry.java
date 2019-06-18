@@ -14,24 +14,28 @@ public class AlarmEntry {
     private boolean isAlarmOn;
     private boolean isAlarmRepeating;
     private boolean isAlarmSnoozed;
+    private boolean[] daysRepeating;
 
     @Ignore
-    public AlarmEntry(String time, String ringtonePath, boolean isAlarmOn, boolean isAlarmRepeating, boolean isAlarmSnoozed) {
+    public AlarmEntry(String time, String ringtonePath, boolean isAlarmOn, boolean isAlarmRepeating, boolean isAlarmSnoozed, boolean[] daysRepeating) {
         this.time = time;
         this.ringtonePath = ringtonePath;
         this.isAlarmOn = isAlarmOn;
         this.isAlarmRepeating = isAlarmRepeating;
         this.isAlarmSnoozed = isAlarmSnoozed;
+        this.daysRepeating = daysRepeating;
 
     }
 
-    public AlarmEntry(int id, String time, String ringtonePath, boolean isAlarmOn, boolean isAlarmRepeating, boolean isAlarmSnoozed) {
+    public AlarmEntry(int id, String time, String ringtonePath, boolean isAlarmOn, boolean isAlarmRepeating, boolean isAlarmSnoozed, boolean[] daysRepeating) {
         this.id = id;
         this.time = time;
         this.ringtonePath = ringtonePath;
         this.isAlarmOn = isAlarmOn;
         this.isAlarmRepeating = isAlarmRepeating;
         this.isAlarmSnoozed = isAlarmSnoozed;
+        this.daysRepeating = daysRepeating;
+
     }
 
     public int getId() { return id; }
@@ -57,4 +61,8 @@ public class AlarmEntry {
     public boolean isAlarmSnoozed() { return isAlarmSnoozed; }
 
     public void setAlarmSnoozed(boolean isAlarmSnoozed) { this.isAlarmSnoozed = isAlarmSnoozed; }
+
+    public boolean[] getDaysRepeating() { return daysRepeating; }
+
+    public void setDaysRepeating(boolean[] daysRepeating) { this.daysRepeating = daysRepeating; }
 }
