@@ -51,7 +51,7 @@ public class AlarmInstance {
         int currentDayOfWeek = getCurrentDayOfWeek(alarmCalender);
         boolean[] daysRepeating = alarmEntry.getDaysRepeating();
         boolean isAlarmTimeLaterToday = true;
-        Long alarmTimeInMillisToday = convertRepeatingAlarmTimeToMillis(alarmEntry, alarmCalender);
+        Long alarmTimeInMillisToday = AlarmUtils.convertRepeatingAlarmTimeToMillis(alarmEntry, alarmCalender);
         if (alarmTimeInMillisToday < timeWhenAlarmSet) {
             isAlarmTimeLaterToday = false;
         }
@@ -222,19 +222,6 @@ public class AlarmInstance {
         return adjustedCurrentDayOfWeek;
     }
 
-    private long convertRepeatingAlarmTimeToMillis(AlarmEntry alarmEntry, Calendar alarmCalender) {
-        String[] alarmTime = alarmEntry.getTime().split(":");
-        String alarmTimeHours = alarmTime[0];
-        String alarmTimeMinutes = alarmTime[1];
-
-        alarmCalender.setFirstDayOfWeek(Calendar.MONDAY);
-        alarmCalender.set(Calendar.HOUR_OF_DAY, Integer.parseInt(alarmTimeHours));
-        alarmCalender.set(Calendar.MINUTE, Integer.parseInt(alarmTimeMinutes));
-        alarmCalender.set(Calendar.SECOND, 0);
-        alarmCalender.set(Calendar.MILLISECOND, 0);
-        return alarmCalender.getTimeInMillis();
-    }
-
     private void setRepeatingAlarm(Context context, AlarmEntry alarmEntry, long alarmTimeInMillis) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, alarmTimeInMillis).apply();
@@ -257,15 +244,14 @@ public class AlarmInstance {
     private void createTimeUntilAlarmSnackBar(Context context, AlarmEntry alarmEntry) {
         if (context instanceof MainActivity) {
             String alarmTimeString = alarmEntry.getTime();
-            String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(alarmTimeString);
-            AlarmUtils.showTimeUntilAlarmSnack(context, timeUntilAlarm);
+            AlarmUtils.showTimeUntilAlarmSnack(context, alarmTimeString);
         }
     }
 
     private void setOneTimeAlarm(Context context, AlarmEntry alarmEntry) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         long previousAlarmTimeInMillis = sharedPreferences.getLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0);
-        long alarmTimeInMillis = AlarmUtils.convertAlarmTimeToMillis(alarmEntry.getTime());
+        long alarmTimeInMillis = AlarmUtils.convertOneTimeAlarmTimeToMillis(alarmEntry.getTime());
 
         if (alarmTimeInMillis != previousAlarmTimeInMillis) {
             sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, alarmTimeInMillis).apply();
