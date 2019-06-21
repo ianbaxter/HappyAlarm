@@ -2,7 +2,6 @@ package com.example.android.simplealarm.utilities;
 
 import android.app.Activity;
 import android.content.Context;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -67,32 +66,6 @@ public class AlarmUtils {
 
             long newAlarmTimeInMillis = calendar.getTimeInMillis();
             long timeUntilAlarmInMillis = newAlarmTimeInMillis - timeNowInMillis;
-
-            return String.format(Locale.getDefault(), "%02d:%02d", TimeUnit.MILLISECONDS.toHours(timeUntilAlarmInMillis),
-                    TimeUnit.MILLISECONDS.toMinutes(timeUntilAlarmInMillis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeUntilAlarmInMillis)));
-        }
-    }
-
-    public static String newAlarmTime(String alarmTime, int additionalHours) {
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm");
-            LocalTime newAlarmTime = LocalTime.parse(alarmTime, dtf).plusHours(additionalHours);
-            return newAlarmTime.toString();
-
-        } else {
-            String[] hoursAndMinutes = alarmTime.split(":");
-            String hoursString = hoursAndMinutes[0];
-            int hour = Integer.parseInt(hoursString);
-
-            Calendar c = Calendar.getInstance();
-            c.set(Calendar.HOUR_OF_DAY, hour + additionalHours);
-            c.set(Calendar.SECOND, 0);
-
-            Calendar calendar = Calendar.getInstance();
-            long timeNowInMillis = calendar.getTimeInMillis();
-            long snoozedAlarmTimeInMillis = c.getTimeInMillis();
-            long timeUntilAlarmInMillis = snoozedAlarmTimeInMillis - timeNowInMillis;
 
             return String.format(Locale.getDefault(), "%02d:%02d", TimeUnit.MILLISECONDS.toHours(timeUntilAlarmInMillis),
                     TimeUnit.MILLISECONDS.toMinutes(timeUntilAlarmInMillis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeUntilAlarmInMillis)));

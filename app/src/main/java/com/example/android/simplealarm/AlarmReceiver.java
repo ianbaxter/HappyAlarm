@@ -149,36 +149,30 @@ public class AlarmReceiver extends BroadcastReceiver {
         mediaPlayer.setAudioAttributes(audioAttributes);
         mediaPlayer.setLooping(true);
 
-        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                AppDatabase mDb = AppDatabase.getInstance(context);
-                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
-                try {
-                    String ringtonePath = alarmEntry.getRingtonePath();
-                    mediaPlayer.setDataSource(context,
-                            Uri.parse(ringtonePath));
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                    vibrate(context);
-                } catch (IOException e) {
-                    Log.d(TAG, "IOException: " + e);
-                }
+        AppExecutors.getsInstance().diskIO().execute(() -> {
+            AppDatabase mDb = AppDatabase.getInstance(context);
+            AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+            try {
+                String ringtonePath = alarmEntry.getRingtonePath();
+                mediaPlayer.setDataSource(context,
+                        Uri.parse(ringtonePath));
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+                vibrate(context);
+            } catch (IOException e) {
+                Log.d(TAG, "IOException: " + e);
             }
         });
 
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mediaPlayer) {
-                if (isVibrating) {
-                    vibrator.cancel();
-                    isVibrating = false;
-                }
-                mediaPlayer.release();
-                NotificationUtils.clearAllNotifications(context);
-                if (countDownTimer != null) {
-                    countDownTimer.cancel();
-                }
+        mediaPlayer.setOnCompletionListener(mediaPlayer -> {
+            if (isVibrating) {
+                vibrator.cancel();
+                isVibrating = false;
+            }
+            mediaPlayer.release();
+            NotificationUtils.clearAllNotifications(context);
+            if (countDownTimer != null) {
+                countDownTimer.cancel();
             }
         });
     }

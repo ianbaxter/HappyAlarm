@@ -32,7 +32,6 @@ import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
@@ -59,13 +58,12 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         setContentView(R.layout.activity_main);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
         EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
-        FloatingActionButton newAlarmFab = findViewById(R.id.fab_add_alarm);
 
         if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_EXPANDED_POSITION_KEY)) {
             savedExpandedPosition = savedInstanceState.getInt(SAVED_EXPANDED_POSITION_KEY, -1);
         }
 
-        createView(emptyView, recyclerView, newAlarmFab);
+        createView(emptyView, recyclerView);
         appDatabase = AppDatabase.getInstance(getApplicationContext());
         setupViewModel();
     }
@@ -77,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         outState.putInt(SAVED_EXPANDED_POSITION_KEY, savedExpandedPosition);
     }
 
-    private void createView(TextView emptyView, EmptyRecyclerView recyclerView, FloatingActionButton fab) {
+    private void createView(TextView emptyView, EmptyRecyclerView recyclerView) {
         alarmAdaptor = new AlarmAdapter(this, recyclerView, savedExpandedPosition);
         alarmAdaptor.setHasStableIds(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -139,12 +137,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 String ringtonePath = ringtoneUri.toString();
                 AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(clickedAlarmRingtonePosition);
                 alarmEntry.setRingtonePath(ringtonePath);
-                AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        appDatabase.alarmDao().updateAlarm(alarmEntry);
-                    }
-                });
+                AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().updateAlarm(alarmEntry));
             } else {
                 Log.e(TAG, "Error getting data from intent");
             }
@@ -182,34 +175,27 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     @Override
     public void onFinishNewAlarm(String time) {
         String defaultTone = "android.resource://com.example.android.simplealarm/" + R.raw.alarm1;
+        // daysRepeating represents {monday, tuesday, wednesday, thursday, friday, saturday, sunday}
         boolean[] daysRepeating = {true,true,true,true,true,true,true};
-        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, daysRepeating);
-        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                appDatabase.alarmDao().insertAlarm(alarmEntry);
-            }
-        });
+        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false,
+                false, daysRepeating);
+        AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().insertAlarm(alarmEntry));
     }
 
     @Override
     public void onFinishUpdateAlarm(final String time, final int alarmEntryId) {
-        AppExecutors.getsInstance().diskIO().execute(new Runnable() {
-            @Override
-            public void run() {
-                AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
-                alarmEntry.setTime(time);
+        AppExecutors.getsInstance().diskIO().execute(() -> {
+            AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
+            alarmEntry.setTime(time);
 
-                boolean isAlarmOn = alarmEntry.isAlarmOn();
-                if (isAlarmOn) {
-                    AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
-                } else {
-                    alarmEntry.setAlarmOn(true);
-                }
-
-                appDatabase.alarmDao().updateAlarm(alarmEntry);
-                new AlarmInstance(MainActivity.this, alarmEntry);
+            if (alarmEntry.isAlarmOn()) {
+                AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
+            } else {
+                alarmEntry.setAlarmOn(true);
             }
+
+            appDatabase.alarmDao().updateAlarm(alarmEntry);
+            new AlarmInstance(MainActivity.this, alarmEntry);
         });
     }
 
