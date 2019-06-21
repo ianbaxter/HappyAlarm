@@ -1,6 +1,5 @@
 package com.example.android.simplealarm.adapters;
 
-import android.app.Activity;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,7 +10,9 @@ import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,32 +21,36 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import com.example.android.simplealarm.AlarmInstance;
 import com.example.android.simplealarm.AppExecutors;
 import com.example.android.simplealarm.R;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
-import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.utilities.NotificationUtils;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
+    private static final String CURRENT_ALARM_TIME_IN_MILLIS_KEY = "current_alarm_time_in_millis";
     private static final String TAG = AlarmAdapter.class.getSimpleName();
 
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
+    private RecyclerView mRecyclerView;
     private AlarmItemExpandClickListener alarmItemExpandClickListener;
     private AlarmTimeClickListener alarmTimeClickListener;
     private RingtoneItemClickListener ringtoneItemClickListener;
     private int expandedPosition;
     private int previousExpandedPosition = -1;
 
-    public AlarmAdapter(Context context, int expandedAlarmItemPosition){
+    public AlarmAdapter(Context context, RecyclerView recyclerView, int expandedAlarmItemPosition){
         mContext = context;
+        mRecyclerView = recyclerView;
         expandedPosition = expandedAlarmItemPosition;
 
         try {
@@ -72,36 +77,40 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     class AlarmViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener {
         private Button alarmTimeButton;
-        private Switch alarmSwitch;
-        private CheckBox alarmRepeatAll;
-        private Button alarmDismissSnoozeButton;
+        private Switch alarmOnOffSwitch;
+        private CheckBox repeatAlarmCheckbox;
+        private TextView repeatSummaryTextView;
+        private Button dismissAlarmSnoozeButton;
         private Button alarmRingtoneButton;
+        private Button deleteAlarmButton;
         private ImageView alarmDownArrow;
         private ImageView alarmUpArrow;
-        private CheckBox alarmRepeatMonday;
-        private CheckBox alarmRepeatTuesday;
-        private CheckBox alarmRepeatWednesday;
-        private CheckBox alarmRepeatThursday;
-        private CheckBox alarmRepeatFriday;
-        private CheckBox alarmRepeatSaturday;
-        private CheckBox alarmRepeatSunday;
+        private CheckBox repeatAlarmMonday;
+        private CheckBox repeatAlarmTuesday;
+        private CheckBox repeatAlarmWednesday;
+        private CheckBox repeatAlarmThursday;
+        private CheckBox repeatAlarmFriday;
+        private CheckBox repeatAlarmSaturday;
+        private CheckBox repeatAlarmSunday;
 
         private AlarmViewHolder(View alarmView) {
             super(alarmView);
             alarmTimeButton = alarmView.findViewById(R.id.button_alarm_time);
-            alarmSwitch = alarmView.findViewById(R.id.switch_alarm);
-            alarmRepeatAll = alarmView.findViewById(R.id.checkbox_repeat);
-            alarmDismissSnoozeButton = alarmView.findViewById(R.id.button_dismiss_snooze);
+            alarmOnOffSwitch = alarmView.findViewById(R.id.switch_alarm);
+            repeatAlarmCheckbox = alarmView.findViewById(R.id.checkbox_repeat);
+            repeatSummaryTextView = alarmView.findViewById(R.id.text_view_repeat_summary);
+            dismissAlarmSnoozeButton = alarmView.findViewById(R.id.button_dismiss_snooze);
             alarmRingtoneButton = alarmView.findViewById(R.id.button_pick_ringtone);
+            deleteAlarmButton = alarmView.findViewById(R.id.button_delete_alarm);
             alarmDownArrow = alarmView.findViewById(R.id.image_arrow_down);
             alarmUpArrow = alarmView.findViewById(R.id.image_arrow_up);
-            alarmRepeatMonday = alarmView.findViewById(R.id.checkbox_repeat_monday);
-            alarmRepeatTuesday = alarmView.findViewById(R.id.checkbox_repeat_tuesday);
-            alarmRepeatWednesday = alarmView.findViewById(R.id.checkbox_repeat_wednesday);
-            alarmRepeatThursday = alarmView.findViewById(R.id.checkbox_repeat_thursday);
-            alarmRepeatFriday = alarmView.findViewById(R.id.checkbox_repeat_friday);
-            alarmRepeatSaturday = alarmView.findViewById(R.id.checkbox_repeat_saturday);
-            alarmRepeatSunday = alarmView.findViewById(R.id.checkbox_repeat_sunday);
+            repeatAlarmMonday = alarmView.findViewById(R.id.checkbox_repeat_monday);
+            repeatAlarmTuesday = alarmView.findViewById(R.id.checkbox_repeat_tuesday);
+            repeatAlarmWednesday = alarmView.findViewById(R.id.checkbox_repeat_wednesday);
+            repeatAlarmThursday = alarmView.findViewById(R.id.checkbox_repeat_thursday);
+            repeatAlarmFriday = alarmView.findViewById(R.id.checkbox_repeat_friday);
+            repeatAlarmSaturday = alarmView.findViewById(R.id.checkbox_repeat_saturday);
+            repeatAlarmSunday = alarmView.findViewById(R.id.checkbox_repeat_sunday);
 
             alarmTimeButton.setOnClickListener(this);
         }
@@ -132,24 +141,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         boolean isAlarmSnoozed = alarmEntry.isAlarmSnoozed();
         boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
         boolean[] daysRepeating = alarmEntry.getDaysRepeating();
-        boolean isAlarmRepeatingMonday = daysRepeating[0];
-        boolean isAlarmRepeatingTuesday = daysRepeating[1];
-        boolean isAlarmRepeatingWednesday = daysRepeating[2];
-        boolean isAlarmRepeatingThursday = daysRepeating[3];
-        boolean isAlarmRepeatingFriday = daysRepeating[4];
-        boolean isAlarmRepeatingSaturday = daysRepeating[5];
-        boolean isAlarmRepeatingSunday = daysRepeating[6];
-
-        viewHolder.alarmTimeButton.setText(alarmTime);
-        viewHolder.alarmSwitch.setChecked(isAlarmOn);
-        viewHolder.alarmRepeatAll.setChecked(isAlarmRepeating);
-        viewHolder.alarmRepeatMonday.setChecked(isAlarmRepeatingMonday);
-        viewHolder.alarmRepeatTuesday.setChecked(isAlarmRepeatingTuesday);
-        viewHolder.alarmRepeatWednesday.setChecked(isAlarmRepeatingWednesday);
-        viewHolder.alarmRepeatThursday.setChecked(isAlarmRepeatingThursday);
-        viewHolder.alarmRepeatFriday.setChecked(isAlarmRepeatingFriday);
-        viewHolder.alarmRepeatSaturday.setChecked(isAlarmRepeatingSaturday);
-        viewHolder.alarmRepeatSunday.setChecked(isAlarmRepeatingSunday);
 
         String ringtonePath = alarmEntry.getRingtonePath();
         Uri ringtonePathUri = Uri.parse(ringtonePath);
@@ -157,15 +148,86 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         String ringtoneTitle = ringtone.getTitle(mContext);
         viewHolder.alarmRingtoneButton.setText(ringtoneTitle);
 
-        viewHolder.alarmSwitch.setOnCheckedChangeListener(getOnOffListener(viewHolder));
-        viewHolder.alarmRepeatAll.setOnCheckedChangeListener(getRepeatListener(viewHolder));
-        viewHolder.alarmRepeatMonday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatTuesday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatWednesday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatThursday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatFriday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatSaturday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
-        viewHolder.alarmRepeatSunday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        String daysRepeatingSummaryText;
+        int numberOfDaysRepeatingForSummary = 0;
+        for (boolean dayRepeating : daysRepeating) {
+            if (dayRepeating) {
+                numberOfDaysRepeatingForSummary++;
+            }
+        }
+        if (numberOfDaysRepeatingForSummary == 7 && isAlarmRepeating) {
+            daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_every_day);
+        } else if (numberOfDaysRepeatingForSummary == 0 || !isAlarmRepeating) {
+            daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_no_repeat);
+        } else {
+            SparseBooleanArray daysRepeatingSparse = new SparseBooleanArray(daysRepeating.length);
+            for (int i = 0; i < daysRepeating.length; i++) {
+                daysRepeatingSparse.append(i, daysRepeating[i]);
+            }
+            ArrayList<String> daysRepeatingSummary = new ArrayList<String>();
+            for (int i = 0; i < daysRepeatingSparse.size(); i++) {
+                if (daysRepeatingSparse.get(i)) {
+                    switch (i) {
+                        case 0:
+                            daysRepeatingSummary.add("Mon");
+                            break;
+                        case 1:
+                            daysRepeatingSummary.add("Tues");
+                            break;
+                        case 2:
+                            daysRepeatingSummary.add("Weds");
+                            break;
+                        case 3:
+                            daysRepeatingSummary.add("Thurs");
+                            break;
+                        case 4:
+                            daysRepeatingSummary.add("Fri");
+                            break;
+                        case 5:
+                            daysRepeatingSummary.add("Sat");
+                            break;
+                        case 6:
+                            daysRepeatingSummary.add("Sun");
+                            break;
+                    }
+                }
+            }
+            daysRepeatingSummaryText = TextUtils.join(", ", daysRepeatingSummary);
+            daysRepeatingSummaryText = daysRepeatingSummaryText.replace("[", "");
+            daysRepeatingSummaryText = daysRepeatingSummaryText.replace("]", "");
+        }
+
+        viewHolder.repeatSummaryTextView.setText(daysRepeatingSummaryText);
+
+        if (isAlarmOn) {
+            viewHolder.alarmTimeButton.setTextColor(mContext.getResources().getColor(R.color.colorAccent));
+            viewHolder.repeatSummaryTextView.setTextColor(mContext.getResources().getColor(R.color.black));
+        } else {
+            viewHolder.alarmTimeButton.setTextColor(mContext.getResources().getColor(R.color.light_grey));
+            viewHolder.repeatSummaryTextView.setTextColor(mContext.getResources().getColor(R.color.light_grey));
+        }
+
+        viewHolder.alarmTimeButton.setText(alarmTime);
+        viewHolder.alarmOnOffSwitch.setChecked(isAlarmOn);
+        viewHolder.repeatAlarmCheckbox.setChecked(isAlarmRepeating);
+        if (isAlarmRepeating) {
+            viewHolder.repeatAlarmMonday.setChecked(daysRepeating[0]);
+            viewHolder.repeatAlarmTuesday.setChecked(daysRepeating[1]);
+            viewHolder.repeatAlarmWednesday.setChecked(daysRepeating[2]);
+            viewHolder.repeatAlarmThursday.setChecked(daysRepeating[3]);
+            viewHolder.repeatAlarmFriday.setChecked(daysRepeating[4]);
+            viewHolder.repeatAlarmSaturday.setChecked(daysRepeating[5]);
+            viewHolder.repeatAlarmSunday.setChecked(daysRepeating[6]);
+        }
+        viewHolder.alarmOnOffSwitch.setOnCheckedChangeListener(getOnOffListener(viewHolder));
+        viewHolder.repeatAlarmCheckbox.setOnCheckedChangeListener(getRepeatListener(viewHolder));
+        viewHolder.repeatAlarmMonday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmTuesday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmWednesday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmThursday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmFriday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmSaturday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
+        viewHolder.repeatAlarmSunday.setOnCheckedChangeListener(getRepeatDayListener(viewHolder));
 
         viewHolder.alarmRingtoneButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -174,7 +236,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             }
         });
 
-        viewHolder.alarmDismissSnoozeButton.setOnClickListener(new View.OnClickListener() {
+        viewHolder.dismissAlarmSnoozeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int alarmEntryId = alarmEntry.getId();
@@ -190,39 +252,27 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             }
         });
 
-        if (isAlarmSnoozed) {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            String alarmSnoozeTime = sharedPreferences.getString(mContext.getString(R.string.pref_snooze_time_key), "5");
-            if (alarmSnoozeTime != null && alarmSnoozeTime.equals("1")) {
-                viewHolder.alarmDismissSnoozeButton.setText(mContext.getString(R.string.snooze_dismiss_minute, alarmSnoozeTime));
-            } else {
-                viewHolder.alarmDismissSnoozeButton.setText(mContext.getString(R.string.snooze_dismiss_minutes, alarmSnoozeTime));
+        viewHolder.deleteAlarmButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = viewHolder.getAdapterPosition();
+                onDeleteAlarm(position);
             }
-            viewHolder.alarmDismissSnoozeButton.setVisibility(View.VISIBLE);
-        } else {
-            viewHolder.alarmDismissSnoozeButton.setVisibility(View.GONE);
-        }
-
-        /**
-         * Slows down code?
-         */
-        if (isAlarmOn) {
-            viewHolder.alarmTimeButton.setTextColor(mContext.getResources().getColor(R.color.colorAccent));
-        } else {
-            viewHolder.alarmTimeButton.setTextColor(mContext.getResources().getColor(R.color.light_grey));
-        }
+        });
 
         final boolean isExpanded = position==expandedPosition;
-        viewHolder.alarmRepeatAll.setVisibility(isExpanded?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatMonday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatTuesday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatWednesday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatThursday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatFriday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatSaturday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
-        viewHolder.alarmRepeatSunday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmCheckbox.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmMonday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmTuesday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmWednesday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmThursday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmFriday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmSaturday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
+        viewHolder.repeatAlarmSunday.setVisibility((isExpanded && isAlarmRepeating)?View.VISIBLE:View.GONE);
         viewHolder.alarmRingtoneButton.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.deleteAlarmButton.setVisibility(isExpanded?View.VISIBLE:View.GONE);
         viewHolder.alarmUpArrow.setVisibility(isExpanded?View.VISIBLE:View.GONE);
+        viewHolder.repeatSummaryTextView.setVisibility(isExpanded?View.GONE:View.VISIBLE);
         viewHolder.alarmDownArrow.setVisibility(isExpanded?View.GONE:View.VISIBLE);
         viewHolder.itemView.setActivated(isExpanded);
 
@@ -238,11 +288,22 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                 notifyItemChanged(position);
                 if (!isExpanded) {
                     alarmItemExpandClickListener.onAlarmItemExpandClick(position);
-                } else {
-                    alarmItemExpandClickListener.onAlarmItemExpandClick(-1);
                 }
             }
         });
+
+        if (isAlarmSnoozed) {
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+            String alarmSnoozeTime = sharedPreferences.getString(mContext.getString(R.string.pref_snooze_time_key), "5");
+            if (alarmSnoozeTime != null && alarmSnoozeTime.equals("1")) {
+                viewHolder.dismissAlarmSnoozeButton.setText(mContext.getString(R.string.snooze_dismiss_minute, alarmSnoozeTime));
+            } else {
+                viewHolder.dismissAlarmSnoozeButton.setText(mContext.getString(R.string.snooze_dismiss_minutes, alarmSnoozeTime));
+            }
+            viewHolder.dismissAlarmSnoozeButton.setVisibility(View.VISIBLE);
+        } else {
+            viewHolder.dismissAlarmSnoozeButton.setVisibility(View.GONE);
+        }
     }
 
     @NonNull
@@ -257,9 +318,12 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                     alarmEntry.setAlarmOn(isOn);
 
                     if (isOn) {
-                        setNewAlarm(alarmEntry, alarmTime);
+                        new AlarmInstance(mContext, alarmEntry);
                     } else {
                         AlarmInstance.cancelAlarm(mContext, alarmEntryId);
+                        // Reset saved alarm time in sharedPreferences to 0
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+                        sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0).apply();
                     }
 
                     AppExecutors.getsInstance().diskIO().execute(new Runnable() {
@@ -269,12 +333,6 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                         }
                     });
                 }
-            }
-
-            private void setNewAlarm(AlarmEntry alarmEntry, String alarmTime) {
-                new AlarmInstance(mContext, alarmEntry);
-                String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(alarmTime);
-                AlarmUtils.showTimeUntilAlarmSnack(mContext, timeUntilAlarm);
             }
         };
     }
@@ -283,14 +341,13 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     private CompoundButton.OnCheckedChangeListener getRepeatListener(@NonNull final AlarmViewHolder holder) {
         return new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isRepeating) {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (buttonView.isPressed()) {
                     AlarmEntry alarmEntry = getAlarmEntryFromHolder(holder);
-                    alarmEntry.setAlarmRepeating(isRepeating);
-
+                    alarmEntry.setAlarmRepeating(isChecked);
                     boolean alarmIsOn = alarmEntry.isAlarmOn();
                     if (alarmIsOn) {
-                        resetCurrentAlarm(alarmEntry);
+                        new AlarmInstance(mContext, alarmEntry);
                     }
 
                     AppExecutors.getsInstance().diskIO().execute(new Runnable() {
@@ -299,19 +356,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                             updateAlarmEntry(alarmEntry);
                         }
                     });
-
-                    if (isRepeating) {
-                        RecyclerView recyclerView = ((Activity)mContext).findViewById(R.id.recycler_view_main);
-                        Snackbar.make(recyclerView, mContext.getString(R.string.alarm_repeating_message), Snackbar.LENGTH_LONG).show();
-
-                    }
                 }
-            }
-
-            private void resetCurrentAlarm(AlarmEntry alarmEntry) {
-                int alarmEntryId = alarmEntry.getId();
-                AlarmInstance.cancelAlarm(mContext, alarmEntryId);
-                new AlarmInstance(mContext, alarmEntry);
             }
         };
     }
@@ -325,35 +370,49 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                     AlarmEntry alarmEntry = getAlarmEntryFromHolder(holder);
                     boolean[] daysRepeating = alarmEntry.getDaysRepeating();
                     int buttonViewId = buttonView.getId();
-                    switch (buttonViewId) {
-                        case R.id.checkbox_repeat_monday:
-                            daysRepeating[0] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_tuesday:
-                            daysRepeating[1] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_wednesday:
-                            daysRepeating[2] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_thursday:
-                            daysRepeating[3] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_friday:
-                            daysRepeating[4] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_saturday:
-                            daysRepeating[5] = isChecked;
-                            break;
-                        case R.id.checkbox_repeat_sunday:
-                            daysRepeating[6] = isChecked;
-                            break;
+
+                    boolean oneDayRepeating = false;
+                    if (!isChecked) {
+                        int numberOfDaysRepeating = 0;
+                        for (boolean dayRepeating : daysRepeating) {
+                            if (dayRepeating) {
+                                numberOfDaysRepeating ++;
+                            }
+                        }
+                        if (numberOfDaysRepeating == 1) {
+                            oneDayRepeating = true;
+                            alarmEntry.setAlarmRepeating(false);
+                        }
                     }
-                    alarmEntry.setDaysRepeating(daysRepeating);
+
+                    if (!oneDayRepeating) {
+                        switch (buttonViewId) {
+                            case R.id.checkbox_repeat_monday:
+                                daysRepeating[0] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_tuesday:
+                                daysRepeating[1] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_wednesday:
+                                daysRepeating[2] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_thursday:
+                                daysRepeating[3] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_friday:
+                                daysRepeating[4] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_saturday:
+                                daysRepeating[5] = isChecked;
+                                break;
+                            case R.id.checkbox_repeat_sunday:
+                                daysRepeating[6] = isChecked;
+                                break;
+                        }
+                        alarmEntry.setDaysRepeating(daysRepeating);
+                    }
 
                     boolean alarmIsOn = alarmEntry.isAlarmOn();
-                    if (alarmIsOn) {
-                        resetCurrentAlarm(alarmEntry);
-                    }
 
                     AppExecutors.getsInstance().diskIO().execute(new Runnable() {
                         @Override
@@ -361,13 +420,11 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                             updateAlarmEntry(alarmEntry);
                         }
                     });
-                }
-            }
 
-            private void resetCurrentAlarm(AlarmEntry alarmEntry) {
-                int alarmEntryId = alarmEntry.getId();
-                AlarmInstance.cancelAlarm(mContext, alarmEntryId);
-                new AlarmInstance(mContext, alarmEntry);
+                    if (alarmIsOn) {
+                        new AlarmInstance(mContext, alarmEntry);
+                    }
+                }
             }
         };
     }
@@ -383,8 +440,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
     }
 
     private void updateAlarmEntry(AlarmEntry alarmEntry) {
-        AppDatabase mDb = AppDatabase.getInstance(mContext);
-        mDb.alarmDao().updateAlarm(alarmEntry);
+        AppDatabase appDatabase = AppDatabase.getInstance(mContext);
+        appDatabase.alarmDao().updateAlarm(alarmEntry);
     }
 
     public static List<AlarmEntry> getAlarmEntries() {
@@ -409,18 +466,24 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         return mAlarmEntries.get(position).getId();
     }
 
-    public void onItemRemove(Snackbar snackbar, int adapterPosition, AppDatabase appDatabase) {
+    private void onDeleteAlarm(int position) {
         int currentlyExpandedPosition = expandedPosition;
-        if (adapterPosition == currentlyExpandedPosition) {
+        if (currentlyExpandedPosition > position) {
+            expandedPosition = currentlyExpandedPosition - 1;
+        } else if (currentlyExpandedPosition == position) {
             expandedPosition = -1;
         }
 
-        AlarmEntry alarmEntry = mAlarmEntries.get(adapterPosition);
+        AppDatabase appDatabase = AppDatabase.getInstance(mContext);
+        AlarmEntry alarmEntry = mAlarmEntries.get(position);
+        Snackbar snackbar = Snackbar.make(mRecyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
         snackbar.setAction(R.string.snackbar_delete_alarm_action, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (adapterPosition == currentlyExpandedPosition) {
-                            expandedPosition = adapterPosition;
+                        if (currentlyExpandedPosition > position) {
+                            expandedPosition = currentlyExpandedPosition;
+                        } else {
+                            expandedPosition = currentlyExpandedPosition;
                         }
 
                         AppExecutors.getsInstance().diskIO().execute(new Runnable() {

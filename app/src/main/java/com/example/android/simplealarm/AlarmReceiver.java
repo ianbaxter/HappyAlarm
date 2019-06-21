@@ -15,7 +15,6 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
 import com.example.android.simplealarm.utilities.AlarmUtils;
@@ -106,18 +105,11 @@ public class AlarmReceiver extends BroadcastReceiver {
                 alarmEntry.setAlarmSnoozed(false);
                 boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
                 if (isAlarmRepeating) {
-                    repeatAlarm(alarmEntry);
+                    new AlarmInstance(context, alarmEntry);
                 } else {
                     setAlarmOffIfCurrentlyOn(alarmEntry);
                 }
                 mDb.alarmDao().updateAlarm(alarmEntry);
-            }
-
-            private void repeatAlarm(AlarmEntry alarmEntry) {
-                String currentAlarmTime = alarmEntry.getTime();
-                String newAlarmTime = AlarmUtils.newAlarmTime(currentAlarmTime, 24);
-                alarmEntry.setTime(newAlarmTime);
-                new AlarmInstance(context, alarmEntry);
             }
 
             private void setAlarmOffIfCurrentlyOn(AlarmEntry alarmEntry) {

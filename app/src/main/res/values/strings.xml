@@ -71,4 +71,7 @@
     <string name="checkbox_repeat_friday_text">F</string>
     <string name="checkbox_repeat_saturday_text">S</string>
     <string name="checkbox_repeat_sunday_text">S</string>
+    <string name="button_delete_text">Delete</string>
+    <string name="repeating_summary_every_day">Every day</string>
+    <string name="repeating_summary_no_repeat">Tomorrow</string>
 </resources>

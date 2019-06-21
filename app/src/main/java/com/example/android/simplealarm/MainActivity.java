@@ -18,8 +18,6 @@ import android.os.Bundle;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.ItemTouchHelper;
 
 import android.util.Log;
 import android.view.Menu;
@@ -33,10 +31,8 @@ import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
-import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import java.util.List;
 
@@ -52,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     private static final int RINGTONE_PICKER = 0;
 
     private AlarmAdapter alarmAdaptor;
-    private EmptyRecyclerView recyclerView;
     private AppDatabase appDatabase;
 
     private int clickedAlarmRingtonePosition;
@@ -63,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
-        recyclerView = findViewById(R.id.recycler_view_main);
+        EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
         FloatingActionButton newAlarmFab = findViewById(R.id.fab_add_alarm);
 
         if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_EXPANDED_POSITION_KEY)) {
@@ -83,45 +78,16 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     }
 
     private void createView(TextView emptyView, EmptyRecyclerView recyclerView, FloatingActionButton fab) {
-        alarmAdaptor = new AlarmAdapter(this, savedExpandedPosition);
+        alarmAdaptor = new AlarmAdapter(this, recyclerView, savedExpandedPosition);
         alarmAdaptor.setHasStableIds(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(alarmAdaptor);
         recyclerView.setEmptyView(emptyView);
         recyclerView.setHasFixedSize(true);
-        newItemTouchHelper().attachToRecyclerView(recyclerView);
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (dy < 0 && !fab.isShown()) {
-                    fab.show();
-                } else if (dy > 0 && fab.isShown()) {
-                    fab.hide();
-                }
-            }
-        });
-
         DividerItemDecoration divider = new DividerItemDecoration(recyclerView.getContext(),
                 layoutManager.getOrientation());
         recyclerView.addItemDecoration(divider);
-    }
-
-    private ItemTouchHelper newItemTouchHelper() {
-        return new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
-                                  @NonNull RecyclerView.ViewHolder viewHolder1) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull final RecyclerView.ViewHolder viewHolder, int swipeDirection) {
-                int position = viewHolder.getAdapterPosition();
-                Snackbar snackbar = Snackbar.make(recyclerView, R.string.snackbar_delete_alarm_text, Snackbar.LENGTH_LONG);
-                alarmAdaptor.onItemRemove(snackbar, position, appDatabase);
-            }
-        });
     }
 
     private void setupViewModel() {
@@ -216,8 +182,8 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     @Override
     public void onFinishNewAlarm(String time) {
         String defaultTone = "android.resource://com.example.android.simplealarm/" + R.raw.alarm1;
-        boolean[] dayRepeating = {false,false,false,false,false,false,false};
-        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, dayRepeating);
+        boolean[] daysRepeating = {true,true,true,true,true,true,true};
+        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, daysRepeating);
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
@@ -245,8 +211,6 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 new AlarmInstance(MainActivity.this, alarmEntry);
             }
         });
-        String timeUntilAlarm = AlarmUtils.timeUntilAlarmFormatter(time);
-        AlarmUtils.showTimeUntilAlarmSnack(this, timeUntilAlarm);
     }
 
     @Override

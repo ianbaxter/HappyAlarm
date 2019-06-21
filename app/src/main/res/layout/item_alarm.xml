@@ -12,15 +12,50 @@
     <Button
         android:id="@+id/button_alarm_time"
         style="@style/TextAppearance.AppCompat.Large"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="16dp"
         android:background="?attr/selectableItemBackground"
         android:textSize="60sp"
+        android:gravity="start|center_vertical"
+        app:layout_constraintEnd_toStartOf="@+id/switch_alarm"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="RtlSymmetry" />
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <TextView
+        android:id="@+id/text_view_repeat_summary"
+        android:layout_width="wrap_content"
+        android:layout_height="45dp"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:gravity="center"
+        android:layout_marginStart="22dp"
+        android:padding="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/button_alarm_time"/>
+
+    <Button
+        android:id="@+id/button_pick_ringtone"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:layout_width="0dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="32dp"
+        android:background="?attr/selectableItemBackground"
+        android:contentDescription="@string/description_ringtone_picker"
+        android:drawableStart="@drawable/outline_ringtone_24"
+        android:drawablePadding="12dp"
+        android:gravity="start|center_vertical"
+        android:textAllCaps="false"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@+id/image_arrow_up"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/checkbox_repeat_monday" />
 
     <Button
         android:id="@+id/button_dismiss_snooze"
@@ -39,30 +74,27 @@
         android:textSize="14sp"
         android:textStyle="bold"
         android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/button_pick_ringtone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkbox_repeat_monday"
+        app:layout_constraintTop_toBottomOf="@+id/button_pick_ringtone"
         tools:ignore="RtlSymmetry" />
 
     <Button
-        android:id="@+id/button_pick_ringtone"
-        style="@style/TextAppearance.AppCompat.Body1"
+        android:id="@+id/button_delete_alarm"
         android:layout_width="wrap_content"
         android:layout_height="45dp"
         android:layout_marginStart="24dp"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="8dp"
         android:background="?attr/selectableItemBackground"
-        android:contentDescription="@string/description_ringtone_picker"
-        android:drawableStart="@drawable/outline_ringtone_24"
+        android:drawableStart="@drawable/outline_delete_alarm_24"
         android:drawablePadding="12dp"
+        android:text="@string/button_delete_text"
         android:textAllCaps="false"
         android:textSize="14sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/checkbox_repeat_monday"
-        tools:ignore="RtlSymmetry" />
+        app:layout_constraintTop_toBottomOf="@+id/button_dismiss_snooze" />
 
     <CheckBox
         android:id="@+id/checkbox_repeat"
@@ -70,9 +102,8 @@
         android:layout_width="wrap_content"
         android:layout_height="45dp"
         android:layout_marginStart="22dp"
-        android:layout_marginTop="8dp"
-        android:contentDescription="@string/description_repeat_alarm"
         android:buttonTint="@color/black"
+        android:contentDescription="@string/description_repeat_alarm"
         android:padding="12dp"
         android:paddingEnd="32dp"
         android:text="@string/checkbox_repeat_text"
@@ -218,14 +249,14 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="24dp"
         android:layout_marginEnd="8dp"
         android:background="?selectableItemBackgroundBorderless"
         android:contentDescription="@string/description_down_arrow"
         android:src="@drawable/outline_keyboard_arrow_down_24"
+        app:layout_constraintBottom_toTopOf="@+id/text_view_repeat_summary"
         app:layout_constraintEnd_toStartOf="@+id/switch_alarm"
         app:layout_constraintStart_toEndOf="@+id/switch_alarm"
-        app:layout_constraintTop_toBottomOf="@+id/switch_alarm" />
+        app:layout_constraintTop_toBottomOf="@+id/text_view_repeat_summary" />
 
     <ImageView
         android:id="@+id/image_arrow_up"
@@ -233,7 +264,7 @@
         android:layout_height="24dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
         android:background="?selectableItemBackgroundBorderless"
         android:contentDescription="@string/description_up_arrow"
         android:src="@drawable/outline_keyboard_arrow_up_24"
