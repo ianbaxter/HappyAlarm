@@ -5,6 +5,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.app.AlarmManager;
+import android.content.ContentValues;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
@@ -19,6 +21,7 @@ import android.os.Bundle;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,8 +34,10 @@ import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
+import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
 
+import java.io.File;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmTimeClickListener,
@@ -112,15 +117,12 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     @Override
     public void onRingtoneClick(int position, AlarmEntry alarmEntry) {
-        final Uri defaultRingtone = Uri.parse("android.resource://com.example.android.simplealarm/" + R.raw.alarm1);
         Uri currentRingtone = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
         Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, getString(R.string.ringtone_picker_title));
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentRingtone);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, defaultRingtone);
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
         clickedAlarmRingtonePosition = position;
         startActivityForResult(intent, RINGTONE_PICKER);
     }
@@ -174,11 +176,10 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     @Override
     public void onFinishNewAlarm(String time) {
-        String defaultTone = "android.resource://com.example.android.simplealarm/" + R.raw.alarm1;
+        String defaultTone = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM).toString();
         // daysRepeating represents {monday, tuesday, wednesday, thursday, friday, saturday, sunday}
         boolean[] daysRepeating = {true,true,true,true,true,true,true};
-        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false,
-                false, daysRepeating);
+        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, daysRepeating, 0);
         AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().insertAlarm(alarmEntry));
     }
 
@@ -194,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 alarmEntry.setAlarmOn(true);
             }
 
-            appDatabase.alarmDao().updateAlarm(alarmEntry);
             new AlarmInstance(MainActivity.this, alarmEntry);
+            appDatabase.alarmDao().updateAlarm(alarmEntry);
         });
     }
 

@@ -4,8 +4,6 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.utilities.AlarmUtils;
@@ -16,14 +14,12 @@ import java.util.Locale;
 public class AlarmInstance {
 
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
-    private static final String CURRENT_ALARM_TIME_IN_MILLIS_KEY = "current_alarm_time_in_millis";
 
     public AlarmInstance(Context context, AlarmEntry alarmEntry) {
 
         if (alarmEntry.isAlarmRepeating()) {
             Calendar alarmCalender = Calendar.getInstance(Locale.UK);
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-            long previousAlarmTimeInMillis = sharedPreferences.getLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0);
+            long previousAlarmTimeInMillis = alarmEntry.getAlarmTimeInMillis();
             long alarmTimeInMillis = getRepeatingAlarmTimeInMillis(alarmEntry, alarmCalender);
 
             if (alarmTimeInMillis != previousAlarmTimeInMillis) {
@@ -223,8 +219,7 @@ public class AlarmInstance {
     }
 
     private void setRepeatingAlarm(Context context, AlarmEntry alarmEntry, long alarmTimeInMillis) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, alarmTimeInMillis).apply();
+        alarmEntry.setAlarmTimeInMillis(alarmTimeInMillis);
 
         PendingIntent alarmReceiverPendingIntent = getAlarmReceiverPendingIntent(context, alarmEntry);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -249,12 +244,11 @@ public class AlarmInstance {
     }
 
     private void setOneTimeAlarm(Context context, AlarmEntry alarmEntry) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        long previousAlarmTimeInMillis = sharedPreferences.getLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0);
+        long previousAlarmTimeInMillis = alarmEntry.getAlarmTimeInMillis();
         long alarmTimeInMillis = AlarmUtils.convertOneTimeAlarmTimeToMillis(alarmEntry.getTime());
 
         if (alarmTimeInMillis != previousAlarmTimeInMillis) {
-            sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, alarmTimeInMillis).apply();
+            alarmEntry.setAlarmTimeInMillis(alarmTimeInMillis);
 
             PendingIntent alarmReceiverPendingIntent = getAlarmReceiverPendingIntent(context, alarmEntry);
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

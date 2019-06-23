@@ -161,19 +161,20 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_every_day);
 
         } else if (!isAlarmRepeating) {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            long alarmTimeInMillis = sharedPreferences.getLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0);
             Calendar calendar = Calendar.getInstance(Locale.UK);
             calendar.set(Calendar.HOUR_OF_DAY, 23);
             calendar.set(Calendar.MINUTE, 59);
             calendar.set(Calendar.SECOND, 59);
             calendar.set(Calendar.MILLISECOND, 999);
             long midnightTonightInMillis = calendar.getTimeInMillis();
+            long alarmTimeInMillis = alarmEntry.getAlarmTimeInMillis();
 
-            if (alarmTimeInMillis <= midnightTonightInMillis) {
+            if (!isAlarmOn) {
+                daysRepeatingSummaryText = "";
+            } else if (alarmTimeInMillis <= midnightTonightInMillis) {
                 daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_today);
             } else {
-                daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_no_repeat);
+                daysRepeatingSummaryText = mContext.getString(R.string.repeating_summary_tomorrow);
             }
 
         } else {
@@ -305,7 +306,9 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             } else {
                 viewHolder.dismissAlarmSnoozeButton.setText(mContext.getString(R.string.snooze_dismiss_minutes, alarmSnoozeTime));
             }
-            viewHolder.dismissAlarmSnoozeButton.setVisibility(View.VISIBLE);
+            if (isExpanded) {
+                viewHolder.dismissAlarmSnoozeButton.setVisibility(View.VISIBLE);
+            }
         } else {
             viewHolder.dismissAlarmSnoozeButton.setVisibility(View.GONE);
         }
@@ -321,9 +324,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
                     new AlarmInstance(mContext, alarmEntry);
                 } else {
                     AlarmInstance.cancelAlarm(mContext, alarmEntry.getId());
-                    // Reset saved alarm time in sharedPreferences to 0
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-                    sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0).apply();
+                    // Reset saved alarm time to 0
+                    alarmEntry.setAlarmTimeInMillis(0);
                 }
 
                 AppExecutors.getsInstance().diskIO().execute(() -> updateAlarmEntry(alarmEntry));
@@ -474,9 +476,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         if (alarmEntry.isAlarmOn()) {
             int alarmEntryId = alarmEntry.getId();
             AlarmInstance.cancelAlarm(mContext, alarmEntryId);
-            // Reset saved alarm time in sharedPreferences to 0
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-            sharedPreferences.edit().putLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0).apply();
+            // Reset saved alarm time to 0
+            alarmEntry.setAlarmTimeInMillis(0);
         }
     }
 }
