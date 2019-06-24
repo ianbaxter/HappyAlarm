@@ -3,10 +3,14 @@ package com.example.android.simplealarm.database;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
+
 import android.content.Context;
 import android.util.Log;
 
 @Database(entities = {AlarmEntry.class}, version = 1, exportSchema = false)
+
+@TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String TAG = AppDatabase.class.getSimpleName();

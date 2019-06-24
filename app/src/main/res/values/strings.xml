@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Smile Alarm</string>
+    <string name="alarm_set_message_1_day">Alarm set for over %1$s day from now.</string>
+    <string name="alarm_set_message_multiple_days">Alarm set for over %1$s days from now.</string>
     <string name="alarm_set_message_hours_minutes">Alarm set for %1$s hours and %2$s minutes from now.</string>
     <string name="alarm_set_message_hour_minutes">Alarm set for %1$s hour and %2$s minutes from now.</string>
     <string name="alarm_set_message_hours_minute">Alarm set for %1$s hours and %2$s minute from now.</string>
@@ -15,6 +17,8 @@
     <string name="empty_view_text_main">No alarms</string>
     <string name="empty_view_text_gallery">No photos</string>
     <string name="description_repeat_alarm">Repeat Alarm</string>
+    <string name="description_dismiss_alarm">Dismiss Alarm</string>
+    <string name="description_ringtone_picker">Ringtone Picker</string>
     <string name="alarm_repeating_message">Alarm will repeat daily.</string>
     <string name="smile_camera_text_view">Smile!</string>
     <string name="action_share">action_share</string>
@@ -55,4 +59,22 @@
     <string name="notification_action_snooze_title">Snooze</string>
     <string name="snackbar_delete_alarm_text">Alarm deleted</string>
     <string name="snackbar_delete_alarm_action">UNDO</string>
+    <string name="ringtone_picker_title">Alarm sound</string>
+    <string name="button_dismiss_snooze_text">Snoozed</string>
+    <string name="description_down_arrow">Expand alarm details</string>
+    <string name="description_up_arrow">Shrink alarm details</string>
+    <string name="checkbox_repeat_monday_text">M</string>
+    <string name="checkbox_repeat_text">Repeat</string>
+    <string name="snooze_dismiss_minute">Snoozed for %1$s minute</string>
+    <string name="snooze_dismiss_minutes">Snoozed for %1$s minutes</string>
+    <string name="checkbox_repeat_tuesday_text">T</string>
+    <string name="checkbox_repeat_wednesday_text">W</string>
+    <string name="checkbox_repeat_thursday_text">T</string>
+    <string name="checkbox_repeat_friday_text">F</string>
+    <string name="checkbox_repeat_saturday_text">S</string>
+    <string name="checkbox_repeat_sunday_text">S</string>
+    <string name="button_delete_text">Delete</string>
+    <string name="repeating_summary_every_day">Every day</string>
+    <string name="repeating_summary_tomorrow">Tomorrow</string>
+    <string name="repeating_summary_today">Today</string>
 </resources>

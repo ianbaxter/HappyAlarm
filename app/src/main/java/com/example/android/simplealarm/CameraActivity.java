@@ -54,15 +54,15 @@ public class CameraActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        clockText = findViewById(R.id.text_clock_smile);
         intent = getIntent();
 
-        setupSnoozeSwipeButton(intent);
+        setupViews(intent);
         showOnLockScreen();
         setupCameraView(intent);
     }
 
-    private void setupSnoozeSwipeButton(Intent intent) {
+    private void setupViews(Intent intent) {
+        clockText = findViewById(R.id.text_clock_smile);
         snoozeSwipeButton = findViewById(R.id.swipe_btn_alarm_snooze);
         snoozeSwipeButton.setOnStateChangeListener(new OnStateChangeListener() {
             @Override
@@ -72,8 +72,10 @@ public class CameraActivity extends AppCompatActivity {
         });
         if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
             snoozeSwipeButton.setVisibility(View.VISIBLE);
+            clockText.setVisibility(View.VISIBLE);
         } else {
             snoozeSwipeButton.setVisibility(View.GONE);
+            clockText.setVisibility(View.GONE);
         }
     }
 

@@ -75,15 +75,18 @@ public class AlarmReceiver extends BroadcastReceiver {
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
-                snoozeAlarm(alarmEntry);
+                int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                alarmEntry.setAlarmSnoozed(true);
+                mDb.alarmDao().updateAlarm(alarmEntry);
+                snooze(alarmEntry);
             }
 
-            private void snoozeAlarm(AlarmEntry alarmEntry) {
+            private void snooze(AlarmEntry alarmEntry) {
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
                 int snoozeTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_snooze_time_key), "5"));
-
                 String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(snoozeTime);
                 alarmEntry.setTime(snoozedAlarmTime);
                 new AlarmInstance(context, alarmEntry);
@@ -92,37 +95,26 @@ public class AlarmReceiver extends BroadcastReceiver {
         });
     }
 
-    private AlarmEntry getAlarmEntryFromIntent(Intent intent, Context context) {
-        int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
-        AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-        return mDb.alarmDao().loadAlarmById(alarmEntryId);
-    }
-
     private void checkIfRepeating(Context context, Intent intent) {
         AppExecutors.getsInstance().diskIO().execute(new Runnable() {
             @Override
             public void run() {
-                AlarmEntry alarmEntry = getAlarmEntryFromIntent(intent, context);
+                int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
+                AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+                alarmEntry.setAlarmSnoozed(false);
                 boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
                 if (isAlarmRepeating) {
-                    repeatAlarm(alarmEntry);
+                    new AlarmInstance(context, alarmEntry);
                 } else {
                     setAlarmOffIfCurrentlyOn(alarmEntry);
                 }
-            }
-
-            private void repeatAlarm(AlarmEntry alarmEntry) {
-                String currentAlarmTime = alarmEntry.getTime();
-                String newAlarmTime = AlarmUtils.newAlarmTime(currentAlarmTime, 24);
-                alarmEntry.setTime(newAlarmTime);
-                new AlarmInstance(context, alarmEntry);
+                mDb.alarmDao().updateAlarm(alarmEntry);
             }
 
             private void setAlarmOffIfCurrentlyOn(AlarmEntry alarmEntry) {
                 if (alarmEntry.isAlarmOn()) {
                     alarmEntry.setAlarmOn(false);
-                    AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
-                    mDb.alarmDao().updateAlarm(alarmEntry);
                 }
             }
         });
@@ -131,10 +123,10 @@ public class AlarmReceiver extends BroadcastReceiver {
     private void triggerAlarm(Context context, Intent intent) {
         int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
         NotificationUtils.alarmTriggeredNotification(context, alarmEntryId);
-        startAlarmAudio(context);
+        startAlarmAudio(context, alarmEntryId);
     }
 
-    private void startAlarmAudio(final Context context) {
+    private void startAlarmAudio(final Context context, int alarmEntryId) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
@@ -148,36 +140,39 @@ public class AlarmReceiver extends BroadcastReceiver {
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build();
 
-        createMediaPlayer(context, audioAttributes);
+        createMediaPlayer(context, audioAttributes, alarmEntryId);
         startAutoSilentTimer(context);
     }
 
-    private void createMediaPlayer(Context context, AudioAttributes audioAttributes) {
+    private void createMediaPlayer(Context context, AudioAttributes audioAttributes, int alarmEntryId) {
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioAttributes(audioAttributes);
         mediaPlayer.setLooping(true);
-        try {
-            mediaPlayer.setDataSource(context,
-                    Uri.parse("android.resource://com.example.android.simplealarm/" + R.raw.alarm1));
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-            vibrate(context);
-        } catch (IOException e) {
-            Log.d(TAG, "IOException: " + e);
-        }
 
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mediaPlayer) {
-                if (isVibrating) {
-                    vibrator.cancel();
-                    isVibrating = false;
-                }
-                mediaPlayer.release();
-                NotificationUtils.clearAllNotifications(context);
-                if (countDownTimer != null) {
-                    countDownTimer.cancel();
-                }
+        AppExecutors.getsInstance().diskIO().execute(() -> {
+            AppDatabase mDb = AppDatabase.getInstance(context);
+            AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
+            try {
+                String ringtonePath = alarmEntry.getRingtonePath();
+                mediaPlayer.setDataSource(context,
+                        Uri.parse(ringtonePath));
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+                vibrate(context);
+            } catch (IOException e) {
+                Log.d(TAG, "IOException: " + e);
+            }
+        });
+
+        mediaPlayer.setOnCompletionListener(mediaPlayer -> {
+            if (isVibrating) {
+                vibrator.cancel();
+                isVibrating = false;
+            }
+            mediaPlayer.release();
+            NotificationUtils.clearAllNotifications(context);
+            if (countDownTimer != null) {
+                countDownTimer.cancel();
             }
         });
     }
