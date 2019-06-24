@@ -141,11 +141,13 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
         boolean[] daysRepeating = alarmEntry.getDaysRepeating();
 
-        // Set alarm sound text
-        Uri ringtonePathUri = Uri.parse(alarmEntry.getRingtonePath());
-        Ringtone ringtone = RingtoneManager.getRingtone(mContext, ringtonePathUri);
-        String ringtoneTitle = ringtone.getTitle(mContext);
-        viewHolder.alarmRingtoneButton.setText(ringtoneTitle);
+        AppExecutors.getsInstance().diskIO().execute(() -> {
+            // Set alarm sound text
+            Uri ringtonePathUri = Uri.parse(alarmEntry.getRingtonePath());
+            Ringtone ringtone = RingtoneManager.getRingtone(mContext, ringtonePathUri);
+            String ringtoneTitle = ringtone.getTitle(mContext);
+            viewHolder.alarmRingtoneButton.setText(ringtoneTitle);
+        });
 
         // Set alarm repeat summary text
         String daysRepeatingSummaryText;
