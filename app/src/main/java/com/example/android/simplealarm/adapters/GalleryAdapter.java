@@ -3,7 +3,6 @@ package com.example.android.simplealarm.adapters;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,8 +22,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryV
 
     private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final int DETAIL_PHOTO_REQUEST = 1;
-
-    private static final String TAG = GalleryAdapter.class.getSimpleName();
 
     private Context context;
     private ArrayList<File> filesList;

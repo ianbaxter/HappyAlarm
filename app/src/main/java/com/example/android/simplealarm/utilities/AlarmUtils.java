@@ -2,8 +2,6 @@ package com.example.android.simplealarm.utilities;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,8 +16,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class AlarmUtils {
-
-    private static final String CURRENT_ALARM_TIME_IN_MILLIS_KEY = "current_alarm_time_in_millis";
 
     public static long convertOneTimeAlarmTimeToMillis(String alarmEntryTime) {
         String[] alarmTime = alarmEntryTime.split(":");
@@ -52,11 +48,11 @@ public class AlarmUtils {
         return calender.getTimeInMillis();
     }
 
-    public static void showTimeUntilAlarmSnack(Context context, String alarmTimeString) {
+    public static void showTimeUntilAlarmSnack(Context context, AlarmEntry alarmEntry) {
         RecyclerView recyclerView = ((Activity)context).findViewById(R.id.recycler_view_main);
+        String alarmTimeString = alarmEntry.getTime();
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        long alarmTimeInMillis = sharedPreferences.getLong(CURRENT_ALARM_TIME_IN_MILLIS_KEY, 0);
+        long alarmTimeInMillis = alarmEntry.getAlarmTimeInMillis();
         long currentTimeInMillis = System.currentTimeMillis();
         long timeDifferenceInMillis = alarmTimeInMillis - currentTimeInMillis;
         long twentyFourHoursInMillis = 1000 * 60 * 60 * 24;

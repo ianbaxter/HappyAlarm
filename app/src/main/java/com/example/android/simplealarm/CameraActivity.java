@@ -139,7 +139,6 @@ public class CameraActivity extends AppCompatActivity {
                                             for (FirebaseVisionFace face : faces) {
                                                 if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
                                                     float smileProb = face.getSmilingProbability();
-                                                    Log.i(TAG, "Smiling probability: " + smileProb);
 
                                                     if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
                                                         if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
@@ -174,7 +173,6 @@ public class CameraActivity extends AppCompatActivity {
         result.toFile(photoFile, new FileCallback() {
             @Override
             public void onFileReady(@Nullable File file) {
-                Log.i(TAG, "Saved photo to internal storage");
                 setResult(RESULT_OK, null);
                 if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
                     finishAndRemoveTask();

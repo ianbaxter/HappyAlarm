@@ -165,14 +165,9 @@ public class AlarmReceiver extends BroadcastReceiver {
         });
 
         mediaPlayer.setOnCompletionListener(mediaPlayer -> {
-            if (isVibrating) {
-                vibrator.cancel();
-                isVibrating = false;
-            }
-            mediaPlayer.release();
-            NotificationUtils.clearAllNotifications(context);
-            if (countDownTimer != null) {
-                countDownTimer.cancel();
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                mediaPlayer.start();
+                vibrate(context);
             }
         });
     }

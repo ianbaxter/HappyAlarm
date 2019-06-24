@@ -38,7 +38,6 @@ import java.util.Locale;
 
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
-    private static final String CURRENT_ALARM_TIME_IN_MILLIS_KEY = "current_alarm_time_in_millis";
     private static final String TAG = AlarmAdapter.class.getSimpleName();
 
     private static List<AlarmEntry> mAlarmEntries;

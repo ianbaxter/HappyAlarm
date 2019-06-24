@@ -238,8 +238,7 @@ public class AlarmInstance {
 
     private void createTimeUntilAlarmSnackBar(Context context, AlarmEntry alarmEntry) {
         if (context instanceof MainActivity) {
-            String alarmTimeString = alarmEntry.getTime();
-            AlarmUtils.showTimeUntilAlarmSnack(context, alarmTimeString);
+            AlarmUtils.showTimeUntilAlarmSnack(context, alarmEntry);
         }
     }
 

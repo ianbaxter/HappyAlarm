@@ -14,14 +14,11 @@ import androidx.core.app.NotificationCompat;
 import com.example.android.simplealarm.AlarmReceiver;
 import com.example.android.simplealarm.MainActivity;
 import com.example.android.simplealarm.R;
-import com.example.android.simplealarm.sync.AlarmIntentService;
-import com.example.android.simplealarm.sync.AlarmTasks;
 
 public class NotificationUtils {
 
     private static final int ALARM_SOUNDING_NOTIFICATION_ID = 9001;
     private static final int ACTION_DISMISS_ALARM_PENDING_INTENT_ID = 9002;
-    private static final int ACTION_STOP_AND_DISMISS_ALARM_PENDING_INTENT_ID = 9003;
     private static final int ALARM_SNOOZED_NOTIFICATION_ID = 9004;
     private static final int ALARM_STOP_PENDING_INTENT_ID = 9005;
 
@@ -55,7 +52,6 @@ public class NotificationUtils {
                         .setContentTitle(context.getString(R.string.alarm_sounding_message))
                         .setContentText(context.getString(R.string.notification_alarm_triggered_content_text))
                         .addAction(snoozeAlarmAction(context, alarmEntryId))
-//                        .addAction(stopAndDismissAlarmAction(context)) CAMERA IS LEFT OPEN IF THIS IS USED
                         .setFullScreenIntent(stopAlarmOnNotification(context, alarmEntryId), true)
                         .setOngoing(true);
 
@@ -77,21 +73,6 @@ public class NotificationUtils {
         return new NotificationCompat.Action((R.drawable.outline_snooze_24),
                 context.getString(R.string.notification_action_snooze_title),
                 snoozePendingIntent);
-    }
-
-    private static NotificationCompat.Action stopAndDismissAlarmAction(Context context) {
-        Intent stopAndDismissAlarmIntent = new Intent(context, AlarmIntentService.class);
-        stopAndDismissAlarmIntent.setAction(AlarmTasks.ACTION_STOP_AND_DISMISS_ALARM);
-
-        PendingIntent stopAndDismissAlarmPendingIntent = PendingIntent.getService(
-                context,
-                ACTION_STOP_AND_DISMISS_ALARM_PENDING_INTENT_ID,
-                stopAndDismissAlarmIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
-
-        return new NotificationCompat.Action((R.drawable.outline_alarm_off_24),
-                context.getString(R.string.notification_action_dismiss_title),
-                stopAndDismissAlarmPendingIntent);
     }
 
     private static PendingIntent stopAlarmOnNotification(Context context, int alarmEntryId) {

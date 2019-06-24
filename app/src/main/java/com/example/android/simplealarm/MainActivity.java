@@ -5,8 +5,6 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
-import android.app.AlarmManager;
-import android.content.ContentValues;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
@@ -21,7 +19,6 @@ import android.os.Bundle;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,10 +31,8 @@ import com.example.android.simplealarm.adapters.AlarmAdapter;
 import com.example.android.simplealarm.adapters.EmptyRecyclerView;
 import com.example.android.simplealarm.database.AlarmEntry;
 import com.example.android.simplealarm.database.AppDatabase;
-import com.example.android.simplealarm.utilities.AlarmUtils;
 import com.example.android.simplealarm.viewmodels.MainViewModel;
 
-import java.io.File;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmTimeClickListener,
@@ -98,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         viewModel.getAlarms().observe(this, new Observer<List<AlarmEntry>>() {
             @Override
             public void onChanged(@Nullable List<AlarmEntry> alarmEntries) {
-                Log.d(TAG, "Updating the list of alarms from LiveData in ViewModel");
                 alarmAdaptor.setAlarmEntries(alarmEntries);
             }
         });
