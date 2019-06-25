@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.android.simplealarm">
+    package="com.birdbathapps.HappyAlarmClock">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -20,7 +20,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
-            android:name=".MainActivity"
+            android:name="com.birdbathapps.HappyAlarmClock.MainActivity"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,20 +29,20 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".GalleryActivity"
-            android:parentActivityName=".MainActivity" />
+            android:name="com.birdbathapps.HappyAlarmClock.GalleryActivity"
+            android:parentActivityName="com.birdbathapps.HappyAlarmClock.MainActivity" />
         <activity
-            android:name=".GalleryDetailActivity"
-            android:parentActivityName=".GalleryActivity" />
+            android:name="com.birdbathapps.HappyAlarmClock.GalleryDetailActivity"
+            android:parentActivityName="com.birdbathapps.HappyAlarmClock.GalleryActivity" />
         <activity
-            android:name=".CameraActivity"
+            android:name="com.birdbathapps.HappyAlarmClock.CameraActivity"
             android:theme="@style/AppThemeFullscreenNoActionBar" />
         <activity
-            android:name=".SettingsActivity"
-            android:parentActivityName=".MainActivity"/>
+            android:name="com.birdbathapps.HappyAlarmClock.SettingsActivity"
+            android:parentActivityName="com.birdbathapps.HappyAlarmClock.MainActivity"/>
 
         <receiver
-            android:name=".AlarmReceiver"
+            android:name="com.birdbathapps.HappyAlarmClock.AlarmReceiver"
             android:exported="false"/>
 
         <provider

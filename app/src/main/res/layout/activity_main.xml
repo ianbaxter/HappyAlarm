@@ -21,14 +21,14 @@
 
         </TextView>
 
-        <com.example.android.simplealarm.adapters.EmptyRecyclerView
+        <com.birdbathapps.HappyAlarmClock.adapters.EmptyRecyclerView
             android:id="@+id/recycler_view_main"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scrollbars="vertical"
             tools:mContext=".MainActivity">
 
-        </com.example.android.simplealarm.adapters.EmptyRecyclerView>
+        </com.birdbathapps.HappyAlarmClock.adapters.EmptyRecyclerView>
     </RelativeLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
