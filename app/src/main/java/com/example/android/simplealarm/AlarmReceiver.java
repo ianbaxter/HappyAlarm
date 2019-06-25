@@ -29,6 +29,7 @@ public class AlarmReceiver extends BroadcastReceiver {
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
     private static final String ALARM_SNOOZED_NOTIFICATION_KEY = "alarm_snoozed_notification";
     private static final String ALARM_DISMISSED_NOTIFICATION_KEY = "alarm_dismissed_notification";
+    private static final String RECEIVER_INTENT_FILTER = "com.alarm.AUTO_SILENT";
 
     protected static MediaPlayer mediaPlayer;
     private static Vibrator vibrator;
@@ -205,6 +206,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                     if (mediaPlayer.isPlaying()) {
                         countDownTimer = null;
                         stopAlarm(context);
+                        Intent closeCameraIntent = new Intent();
+                        closeCameraIntent.setAction(RECEIVER_INTENT_FILTER);
+                        context.sendBroadcast(closeCameraIntent);
                     }
                 }
             }

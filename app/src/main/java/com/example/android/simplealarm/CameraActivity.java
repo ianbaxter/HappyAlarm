@@ -1,8 +1,10 @@
 package com.example.android.simplealarm;
 
 import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -44,6 +46,7 @@ public class CameraActivity extends AppCompatActivity {
 
     private static String TAG = CameraActivity.class.getSimpleName();
     private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
+    private static final String RECEIVER_INTENT_FILTER = "com.alarm.AUTO_SILENT";
 
     private CameraView cameraView;
     private TextView clockText;
@@ -59,7 +62,18 @@ public class CameraActivity extends AppCompatActivity {
         setupViews(intent);
         showOnLockScreen();
         setupCameraView(intent);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(RECEIVER_INTENT_FILTER);
+        registerReceiver(autoSilentReceiver, filter);
     }
+
+    private BroadcastReceiver autoSilentReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            finishAndRemoveTask();
+        }
+    };
 
     private void setupViews(Intent intent) {
         clockText = findViewById(R.id.text_clock_smile);
@@ -212,6 +226,7 @@ public class CameraActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         cameraView.destroy();
+        unregisterReceiver(autoSilentReceiver);
     }
 
     @Override
