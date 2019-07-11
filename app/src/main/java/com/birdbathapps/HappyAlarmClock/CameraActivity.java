@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -42,9 +41,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import timber.log.Timber;
+
 public class CameraActivity extends AppCompatActivity {
 
-    private static String TAG = CameraActivity.class.getSimpleName();
     private static final String ALARM_DISMISS_KEY = "dismiss_alarm";
     private static final String RECEIVER_INTENT_FILTER = "com.birdbathapps.HappyAlarmClock.AUTO_SILENT";
 
@@ -174,7 +174,7 @@ public class CameraActivity extends AppCompatActivity {
                             .addOnFailureListener(new OnFailureListener() {
                                 @Override
                                 public void onFailure(@NonNull Exception e) {
-                                    Log.e(TAG, "Exception" + e);
+                                    Timber.e(e,"Exception");
                                 }
                             });
                 }

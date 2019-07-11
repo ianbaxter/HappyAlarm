@@ -13,7 +13,6 @@ import android.os.CountDownTimer;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import com.birdbathapps.HappyAlarmClock.database.AlarmEntry;
 import com.birdbathapps.HappyAlarmClock.database.AppDatabase;
@@ -22,9 +21,9 @@ import com.birdbathapps.HappyAlarmClock.utilities.NotificationUtils;
 
 import java.io.IOException;
 
-public class AlarmReceiver extends BroadcastReceiver {
+import timber.log.Timber;
 
-    private static final String TAG = AlarmReceiver.class.getSimpleName();
+public class AlarmReceiver extends BroadcastReceiver {
 
     private static final String ALARM_ENTRY_ID_KEY = "alarm_entry_id";
     private static final String ALARM_SNOOZED_NOTIFICATION_KEY = "alarm_snoozed_notification";
@@ -46,9 +45,6 @@ public class AlarmReceiver extends BroadcastReceiver {
                 stopAlarm(context);
                 snoozeAlarm(context, intent);
             } else if (intent.hasExtra(ALARM_DISMISSED_NOTIFICATION_KEY)) {
-
-                int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
-                AlarmInstance.cancelAlarm(context, alarmEntryId);
                 NotificationUtils.clearAllNotifications(context);
                 checkIfRepeating(context, intent);
             } else {
@@ -103,13 +99,16 @@ public class AlarmReceiver extends BroadcastReceiver {
                 int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
                 AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
                 AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
-                alarmEntry.setAlarmSnoozed(false);
                 boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
                 if (isAlarmRepeating) {
                     new AlarmInstance(context, alarmEntry);
                 } else {
+                    if (intent.hasExtra(ALARM_DISMISSED_NOTIFICATION_KEY)) {
+                        AlarmInstance.cancelAlarm(context, alarmEntryId);
+                    }
                     setAlarmOffIfCurrentlyOn(alarmEntry);
                 }
+                alarmEntry.setAlarmSnoozed(false);
                 mDb.alarmDao().updateAlarm(alarmEntry);
             }
 
@@ -131,8 +130,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
-        int alarmMaxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-        int alarmVolume = sharedPreferences.getInt(context.getString(R.string.pref_volume_key),alarmMaxVolume/2);
+        int currentAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+        int alarmVolume = sharedPreferences.getInt(context.getString(R.string.pref_volume_key), currentAlarmVolume);
         audioManager.setStreamVolume(AudioManager.STREAM_ALARM, alarmVolume,
                 AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
 
@@ -161,7 +160,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 mediaPlayer.start();
                 vibrate(context);
             } catch (IOException e) {
-                Log.d(TAG, "IOException: " + e);
+                Timber.d(e,"IOException");
             }
         });
 

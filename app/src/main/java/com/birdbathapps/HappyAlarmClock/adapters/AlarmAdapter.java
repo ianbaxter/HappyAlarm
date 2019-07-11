@@ -11,7 +11,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,9 +35,9 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
+import timber.log.Timber;
 
-    private static final String TAG = AlarmAdapter.class.getSimpleName();
+public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
     private static List<AlarmEntry> mAlarmEntries;
     private Context mContext;
@@ -59,7 +58,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             alarmTimeClickListener = (AlarmTimeClickListener) context;
             ringtoneItemClickListener = (RingtoneItemClickListener) context;
         } catch (ClassCastException ex) {
-            Log.e(TAG, "ClassCastException: " + ex);
+            Timber.e(ex,"ClassCastException");
         }
     }
 

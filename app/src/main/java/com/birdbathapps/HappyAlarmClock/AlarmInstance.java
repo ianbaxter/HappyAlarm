@@ -19,12 +19,9 @@ public class AlarmInstance {
 
         if (alarmEntry.isAlarmRepeating()) {
             Calendar alarmCalender = Calendar.getInstance(Locale.UK);
-            long previousAlarmTimeInMillis = alarmEntry.getAlarmTimeInMillis();
             long alarmTimeInMillis = getRepeatingAlarmTimeInMillis(alarmEntry, alarmCalender);
 
-            if (alarmTimeInMillis != previousAlarmTimeInMillis) {
-                setRepeatingAlarm(context, alarmEntry, alarmTimeInMillis);
-            }
+            setRepeatingAlarm(context, alarmEntry, alarmTimeInMillis);
         } else {
             setOneTimeAlarm(context, alarmEntry);
         }

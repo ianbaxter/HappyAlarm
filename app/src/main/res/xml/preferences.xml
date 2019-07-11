@@ -4,8 +4,7 @@
 
     <androidx.preference.SeekBarPreference
         android:key="@string/pref_volume_key"
-        android:title="@string/pref_volume_label"
-        android:defaultValue="1"/>
+        android:title="@string/pref_volume_label"/>
 
     <androidx.preference.CheckBoxPreference
         android:key="@string/pref_vibrate_key"

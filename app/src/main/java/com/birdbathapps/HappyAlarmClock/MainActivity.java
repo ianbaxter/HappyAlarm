@@ -19,7 +19,6 @@ import android.os.Bundle;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -35,10 +34,10 @@ import com.birdbathapps.HappyAlarmClock.viewmodels.MainViewModel;
 
 import java.util.List;
 
+import timber.log.Timber;
+
 public class MainActivity extends AppCompatActivity implements AlarmAdapter.AlarmTimeClickListener,
         AlarmAdapter.RingtoneItemClickListener, AlarmAdapter.AlarmItemExpandClickListener, SetTimeFragment.TimeDialogListener {
-
-    private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final String TIME_PICKER_FRAGMENT_ID = "time_picker";
     private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
@@ -66,6 +65,10 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         createView(emptyView, recyclerView);
         appDatabase = AppDatabase.getInstance(getApplicationContext());
         setupViewModel();
+
+        if (BuildConfig.DEBUG) {
+            Timber.plant(new Timber.DebugTree());
+        }
     }
 
     @Override
@@ -135,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
                 alarmEntry.setRingtonePath(ringtonePath);
                 AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().updateAlarm(alarmEntry));
             } else {
-                Log.e(TAG, "Error getting data from intent");
+                Timber.e("Error getting data from intent");
             }
         }
     }

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Smile Alarm</string>
+    <string name="app_name">Happy Alarm</string>
     <string name="alarm_set_message_1_day">Alarm set for over %1$s day from now.</string>
     <string name="alarm_set_message_multiple_days">Alarm set for over %1$s days from now.</string>
     <string name="alarm_set_message_hours_minutes">Alarm set for %1$s hours and %2$s minutes from now.</string>

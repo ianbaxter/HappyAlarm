@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -23,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class GalleryActivity extends AppCompatActivity {
+import timber.log.Timber;
 
-    private static final String TAG = GalleryActivity.class.getSimpleName();
+public class GalleryActivity extends AppCompatActivity {
 
     private static final int DETAIL_PHOTO_REQUEST = 1;
     private static final int OPEN_CAMERA_REQUEST = 2;
@@ -63,7 +62,7 @@ public class GalleryActivity extends AppCompatActivity {
             }
             fileArrayList = new ArrayList<>(Arrays.asList(files));
         } catch (Exception e) {
-            Log.e(TAG, "Exception: " + e);
+            Timber.e(e,"Exception");
         }
     }
 
@@ -121,7 +120,7 @@ public class GalleryActivity extends AppCompatActivity {
                 fileArrayList.add(0, newPhotoFile);
                 galleryAdapter.notifyDataSetChanged();
             } catch (Exception e) {
-                Log.e(TAG, "Exception: " + e);
+                Timber.e(e,"Exception");
             }
         }
     }

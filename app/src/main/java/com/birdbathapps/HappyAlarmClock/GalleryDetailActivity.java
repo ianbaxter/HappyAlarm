@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -26,9 +25,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-public class GalleryDetailActivity extends AppCompatActivity {
+import timber.log.Timber;
 
-    private static final String TAG = GalleryDetailActivity.class.getSimpleName();
+public class GalleryDetailActivity extends AppCompatActivity {
 
     private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final String CURRENT_POSITION_KEY = "current_position";
@@ -76,7 +75,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
             }
             fileList = Arrays.asList(files);
         } catch (Exception e) {
-            Log.e(TAG, "Exception: " + e);
+            Timber.e(e,"Exception");
         }
     }
 
@@ -149,7 +148,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
             setResult(Activity.RESULT_OK, resultIntent);
             finish();
         } else {
-            Log.e(TAG, "Error deleting file");
+            Timber.e("Error deleting file");
         }
     }
 

@@ -1,6 +1,7 @@
 package com.birdbathapps.HappyAlarmClock;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -21,14 +22,23 @@ public class SettingsFragment extends androidx.preference.PreferenceFragmentComp
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
         AudioManager audioManager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
-        int alarmMaxVolume = 1;
-        if (audioManager != null) {
-            alarmMaxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-        }
+        int maxAlarmVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+        int currentAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
 
         SeekBarPreference seekBarPreference = findPreference(getActivity().getString(R.string.pref_volume_key));
         if (seekBarPreference != null) {
-            seekBarPreference.setMax(alarmMaxVolume);
+            seekBarPreference.setMax(maxAlarmVolume);
+            seekBarPreference.setValue(currentAlarmVolume);
+            seekBarPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+                int newAlarmVolume = Integer.parseInt(newValue.toString());
+
+                if (preference != null) {
+                    audioManager.setStreamVolume(AudioManager.STREAM_ALARM, newAlarmVolume, AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+                    return true;
+                } else {
+                    return false;
+                }
+            });
         }
 
         SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
