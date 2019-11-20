@@ -1,7 +1,6 @@
 package com.birdbathapps.HappyAlarmClock;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -14,6 +13,8 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SeekBarPreference;
 
+import java.util.Objects;
+
 public class SettingsFragment extends androidx.preference.PreferenceFragmentCompat
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -21,7 +22,7 @@ public class SettingsFragment extends androidx.preference.PreferenceFragmentComp
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
-        AudioManager audioManager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+        AudioManager audioManager = (AudioManager) Objects.requireNonNull(getActivity()).getSystemService(Context.AUDIO_SERVICE);
         int maxAlarmVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
         int currentAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
 

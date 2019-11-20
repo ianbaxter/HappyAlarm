@@ -2,7 +2,6 @@ package com.birdbathapps.HappyAlarmClock;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -67,11 +66,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
             } else {
-                Arrays.sort(files, new Comparator<File>(){
-                    public int compare(File f1, File f2)
-                    {
-                        return Long.compare(f2.lastModified(), f1.lastModified());
-                    } });
+                Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
             }
             fileList = Arrays.asList(files);
         } catch (Exception e) {
@@ -129,12 +124,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
         new AlertDialog.Builder(context)
                 .setTitle(R.string.alert_dialog_title_delete_photo)
                 .setMessage(R.string.alert_dialog_message_delete_photo)
-                .setPositiveButton(R.string.dialog_confirm_delete, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        deletePhoto();
-                    }
-                })
+                .setPositiveButton(R.string.dialog_confirm_delete, (dialog, which) -> deletePhoto())
                 .setNegativeButton(R.string.dialog_cancel_delete, null)
                 .show();
     }

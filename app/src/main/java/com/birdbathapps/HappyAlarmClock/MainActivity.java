@@ -2,7 +2,6 @@ package com.birdbathapps.HappyAlarmClock;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
 import android.content.Intent;
@@ -31,8 +30,6 @@ import com.birdbathapps.HappyAlarmClock.adapters.EmptyRecyclerView;
 import com.birdbathapps.HappyAlarmClock.database.AlarmEntry;
 import com.birdbathapps.HappyAlarmClock.database.AppDatabase;
 import com.birdbathapps.HappyAlarmClock.viewmodels.MainViewModel;
-
-import java.util.List;
 
 import timber.log.Timber;
 
@@ -93,12 +90,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     private void setupViewModel() {
         MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-        viewModel.getAlarms().observe(this, new Observer<List<AlarmEntry>>() {
-            @Override
-            public void onChanged(@Nullable List<AlarmEntry> alarmEntries) {
-                alarmAdaptor.setAlarmEntries(alarmEntries);
-            }
-        });
+        viewModel.getAlarms().observe(this, alarmEntries -> alarmAdaptor.setAlarmEntries(alarmEntries));
 
     }
 

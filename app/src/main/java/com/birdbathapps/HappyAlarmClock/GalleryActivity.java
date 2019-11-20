@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
@@ -16,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.birdbathapps.HappyAlarmClock.adapters.EmptyRecyclerView;
 import com.birdbathapps.HappyAlarmClock.adapters.GalleryAdapter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,6 +36,7 @@ public class GalleryActivity extends AppCompatActivity {
 
     private ArrayList<File> fileArrayList;
     private GalleryAdapter galleryAdapter;
+    private EmptyRecyclerView recyclerView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -39,7 +44,7 @@ public class GalleryActivity extends AppCompatActivity {
         setContentView(R.layout.activity_gallery);
         setTitle(R.string.title_gallery_activity);
         TextView emptyView = findViewById(R.id.tv_empty_view_gallery);
-        EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_gallery);
+        recyclerView = findViewById(R.id.recycler_view_gallery);
         FloatingActionButton cameraFab = findViewById(R.id.fab_take_photo);
 
         createListOfFiles();
@@ -54,11 +59,7 @@ public class GalleryActivity extends AppCompatActivity {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
             } else {
-                Arrays.sort(files, new Comparator<File>(){
-                    public int compare(File f1, File f2)
-                    {
-                        return Long.compare(f2.lastModified(), f1.lastModified());
-                    } });
+                Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
             }
             fileArrayList = new ArrayList<>(Arrays.asList(files));
         } catch (Exception e) {
@@ -109,11 +110,7 @@ public class GalleryActivity extends AppCompatActivity {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     Arrays.sort(files, Comparator.comparingLong(File::lastModified).reversed());
                 } else {
-                    Arrays.sort(files, new Comparator<File>(){
-                        public int compare(File f1, File f2)
-                        {
-                            return Long.compare(f2.lastModified(), f1.lastModified());
-                        } });
+                    Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
                 }
                 ArrayList<File> tempFileArrayList = new ArrayList<>(Arrays.asList(files));
                 File newPhotoFile = tempFileArrayList.get(0);
@@ -128,5 +125,30 @@ public class GalleryActivity extends AppCompatActivity {
     public void startCameraActivity(View view) {
         Intent intent = new Intent(this, CameraActivity.class);
         startActivityForResult(intent, OPEN_CAMERA_REQUEST);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_graph_activity, menu);
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id){
+            case R.id.action_graph:
+                if (fileArrayList.size() > 1) {
+                    Intent intent = new Intent(this, GraphActivity.class);
+                    startActivity(intent);
+                } else {
+                    Snackbar.make(recyclerView, R.string.snackbar_graph_data_error_text, Snackbar.LENGTH_LONG).show();
+                }
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

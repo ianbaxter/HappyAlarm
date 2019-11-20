@@ -19,11 +19,10 @@
     <string name="description_repeat_alarm">Repeat Alarm</string>
     <string name="description_dismiss_alarm">Dismiss Alarm</string>
     <string name="description_ringtone_picker">Ringtone Picker</string>
-    <string name="action_share">action_share</string>
-    <string name="action_delete">action_delete</string>
+    <string name="action_share">Share Photo</string>
+    <string name="action_delete">Delete Photo</string>
     <string name="activity_gallery_title">Gallery</string>
-    <string name="action_gallery">action_gallery</string>
-    <string name="action_photo">action_photo</string>
+    <string name="action_gallery">Open Gallery</string>
     <string name="dialog_confirm_delete">Yes</string>
     <string name="dialog_cancel_delete">Cancel</string>
     <string name="action_settings">Settings</string>
@@ -75,4 +74,8 @@
     <string name="repeating_summary_every_day">Every day</string>
     <string name="repeating_summary_tomorrow">Tomorrow</string>
     <string name="repeating_summary_today">Today</string>
+    <string name="action_graph">View Graph</string>
+    <string name="title_graph_activity">Your Happy Times</string>
+    <string name="dataset_label_graph_activity">Wake Up Time</string>
+    <string name="snackbar_graph_data_error_text">Oops! You need to take multiple photos before you can compare your waking times.</string>
 </resources>

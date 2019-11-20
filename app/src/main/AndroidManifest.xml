@@ -35,6 +35,9 @@
             android:name="com.birdbathapps.HappyAlarmClock.GalleryDetailActivity"
             android:parentActivityName="com.birdbathapps.HappyAlarmClock.GalleryActivity" />
         <activity
+            android:name=".GraphActivity"
+            android:parentActivityName=".GalleryActivity"/>
+        <activity
             android:name="com.birdbathapps.HappyAlarmClock.CameraActivity"
             android:theme="@style/AppThemeFullscreenNoActionBar" />
         <activity

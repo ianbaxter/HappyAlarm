@@ -104,17 +104,17 @@ public class AlarmUtils {
                     Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_hours_minutes, hours, minutes), Snackbar.LENGTH_LONG).show();
                 }
             }
-        } else if (timeDifferenceInDays >= 1 && timeDifferenceInDays < 2) {
+        } else if (timeDifferenceInDays == 1) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_1_day, "1"), Snackbar.LENGTH_LONG).show();
-        } else if (timeDifferenceInDays >= 2 && timeDifferenceInDays < 3) {
+        } else if (timeDifferenceInDays == 2) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_multiple_days, "2"), Snackbar.LENGTH_LONG).show();
-        } else if (timeDifferenceInDays >= 3 && timeDifferenceInDays < 4) {
+        } else if (timeDifferenceInDays == 3) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_multiple_days, "3"), Snackbar.LENGTH_LONG).show();
-        } else if (timeDifferenceInDays >= 4 && timeDifferenceInDays < 5) {
+        } else if (timeDifferenceInDays == 4) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_multiple_days, "4"), Snackbar.LENGTH_LONG).show();
-        } else if (timeDifferenceInDays >= 5 && timeDifferenceInDays < 6) {
+        } else if (timeDifferenceInDays == 5) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_multiple_days, "5"), Snackbar.LENGTH_LONG).show();
-        } else if (timeDifferenceInDays >= 6 && timeDifferenceInDays < 7) {
+        } else if (timeDifferenceInDays == 6) {
             Snackbar.make(recyclerView, context.getString(R.string.alarm_set_message_multiple_days, "6"), Snackbar.LENGTH_LONG).show();
         }
     }

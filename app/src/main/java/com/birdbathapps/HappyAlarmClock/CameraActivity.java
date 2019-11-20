@@ -16,11 +16,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.annotation.Nullable;
 
-import com.ebanx.swipebtn.OnStateChangeListener;
 import com.ebanx.swipebtn.SwipeButton;
 import com.birdbathapps.HappyAlarmClock.utilities.NotificationUtils;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
@@ -29,16 +26,12 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraView;
-import com.otaliastudios.cameraview.FileCallback;
-import com.otaliastudios.cameraview.Frame;
-import com.otaliastudios.cameraview.FrameProcessor;
 import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.Size;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 import timber.log.Timber;
@@ -78,12 +71,7 @@ public class CameraActivity extends AppCompatActivity {
     private void setupViews(Intent intent) {
         clockText = findViewById(R.id.text_clock_smile);
         snoozeSwipeButton = findViewById(R.id.swipe_btn_alarm_snooze);
-        snoozeSwipeButton.setOnStateChangeListener(new OnStateChangeListener() {
-            @Override
-            public void onStateChange(boolean active) {
-                snoozeFromCamera();
-            }
-        });
+        snoozeSwipeButton.setOnStateChangeListener(active -> snoozeFromCamera());
         if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
             snoozeSwipeButton.setVisibility(View.VISIBLE);
             clockText.setVisibility(View.VISIBLE);
@@ -115,84 +103,69 @@ public class CameraActivity extends AppCompatActivity {
                 savePhoto(result);
             }
         });
-        cameraView.addFrameProcessor(new FrameProcessor() {
-            @Override
-            public void process(@NonNull Frame frame) {
-                byte[] data = frame.getData();
-                int rotation = frame.getRotation() / 90;
-                Size size = frame.getSize();
+        cameraView.addFrameProcessor(frame -> {
+            byte[] data = frame.getData();
+            int rotation = frame.getRotation() / 90;
+            Size size = frame.getSize();
+            if (size != null) {
+                // Process frame
+                FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
+                        .setWidth(size.getWidth())
+                        .setHeight(size.getHeight())
+                        .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
+                        .setRotation(rotation)
+                        .build();
 
-                if (size != null) {
-                    // Process
-                    FirebaseVisionImageMetadata metadata = new FirebaseVisionImageMetadata.Builder()
-                            .setWidth(size.getWidth())
-                            .setHeight(size.getHeight())
-                            .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
-                            .setRotation(rotation)
-                            .build();
+                FirebaseVisionImage image = FirebaseVisionImage.fromByteArray(data, metadata);
 
-                    FirebaseVisionImage image = FirebaseVisionImage.fromByteArray(data, metadata);
+                FirebaseVisionFaceDetectorOptions realTimeOpts =
+                        new FirebaseVisionFaceDetectorOptions.Builder()
+                                .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                                .setMinFaceSize(0.15f)
+                                .build();
 
-                    FirebaseVisionFaceDetectorOptions realTimeOpts =
-                            new FirebaseVisionFaceDetectorOptions.Builder()
-                                    .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-                                    .setMinFaceSize(0.15f)
-                                    .build();
+                FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
+                        .getVisionFaceDetector(realTimeOpts);
 
-                    FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
-                            .getVisionFaceDetector(realTimeOpts);
+                detector.detectInImage(image)
+                        .addOnSuccessListener(
+                                faces -> {
+                                    if (faces.size() == 0) {
+                                        return;
+                                    }
+                                    for (FirebaseVisionFace face : faces) {
+                                        if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
+                                            float smileProb = face.getSmilingProbability();
 
-                    detector.detectInImage(image)
-                            .addOnSuccessListener(
-                                    new OnSuccessListener<List<FirebaseVisionFace>>() {
-                                        @Override
-                                        public void onSuccess(List<FirebaseVisionFace> faces) {
-                                            if (faces.size() == 0) {
-                                                return;
-                                            }
-                                            for (FirebaseVisionFace face : faces) {
-                                                if (face.getSmilingProbability() != FirebaseVisionFace.UNCOMPUTED_PROBABILITY) {
-                                                    float smileProb = face.getSmilingProbability();
-
-                                                    if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
-                                                        if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
-                                                            AlarmReceiver.stopAlarm(getApplicationContext());
-                                                            clockText.setVisibility(View.GONE);
-                                                            snoozeSwipeButton.setVisibility(View.GONE);
-                                                            cameraView.takePicture();
-                                                        }
-                                                    } else {
-                                                        if (smileProb > 0.85) {
-                                                            clockText.setVisibility(View.GONE);
-                                                            cameraView.takePicture();
-                                                        }
-                                                    }
+                                            if (intent.getExtras() != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+                                                if (smileProb > 0.85 && AlarmReceiver.mediaPlayer != null) {
+                                                    AlarmReceiver.stopAlarm(getApplicationContext());
+                                                    clockText.setVisibility(View.GONE);
+                                                    snoozeSwipeButton.setVisibility(View.GONE);
+                                                    cameraView.takePicture();
+                                                }
+                                            } else {
+                                                if (smileProb > 0.85) {
+                                                    clockText.setVisibility(View.GONE);
+                                                    cameraView.takePicture();
                                                 }
                                             }
                                         }
-                                    })
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    Timber.e(e,"Exception");
-                                }
-                            });
-                }
+                                    }
+                                })
+                        .addOnFailureListener(e -> Timber.e(e,"Exception"));
             }
         });
     }
 
     private void savePhoto(@NonNull PictureResult result) {
         File photoFile = createImageFile();
-        result.toFile(photoFile, new FileCallback() {
-            @Override
-            public void onFileReady(@Nullable File file) {
-                setResult(RESULT_OK, null);
-                if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
-                    finishAndRemoveTask();
-                } else {
-                    finish();
-                }
+        result.toFile(photoFile, file -> {
+            setResult(RESULT_OK, null);
+            if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
+                finishAndRemoveTask();
+            } else {
+                finish();
             }
         });
     }
@@ -232,7 +205,7 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (intent != null && intent.hasExtra(ALARM_DISMISS_KEY)) {
-            // Do nothing
+            // Prevent back button presses so do nothing
         } else {
             super.onBackPressed();
         }
