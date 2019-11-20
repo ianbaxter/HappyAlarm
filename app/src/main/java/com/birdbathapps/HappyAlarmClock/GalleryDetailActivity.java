@@ -28,8 +28,7 @@ import timber.log.Timber;
 
 public class GalleryDetailActivity extends AppCompatActivity {
 
-    private static final String GALLERY_POSITION_KEY = "photo_position";
-    private static final String CURRENT_POSITION_KEY = "current_position";
+    private final String GALLERY_POSITION_KEY = "photo_position";
 
     private List<File> fileList;
     private int currentPosition;
@@ -134,7 +133,7 @@ public class GalleryDetailActivity extends AppCompatActivity {
         boolean fileDeleted = file.delete();
         if (fileDeleted) {
             Intent resultIntent = new Intent();
-            resultIntent.putExtra(CURRENT_POSITION_KEY, currentPosition);
+            resultIntent.putExtra(GalleryActivity.CURRENT_POSITION_KEY, currentPosition);
             setResult(Activity.RESULT_OK, resultIntent);
             finish();
         } else {

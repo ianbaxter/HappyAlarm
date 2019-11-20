@@ -39,7 +39,7 @@ import timber.log.Timber;
 
 public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHolder> {
 
-    private static List<AlarmEntry> mAlarmEntries;
+    private List<AlarmEntry> mAlarmEntries;
     private Context mContext;
     private RecyclerView mRecyclerView;
     private AlarmItemExpandClickListener alarmItemExpandClickListener;
@@ -411,9 +411,8 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         return getAlarmEntryFromAdapterPosition(adapterPosition);
     }
 
-    public static AlarmEntry getAlarmEntryFromAdapterPosition(int adapterPosition) {
-        List<AlarmEntry> alarmEntries = getAlarmEntries();
-        return alarmEntries.get(adapterPosition);
+    public AlarmEntry getAlarmEntryFromAdapterPosition(int adapterPosition) {
+        return mAlarmEntries.get(adapterPosition);
     }
 
     private void updateAlarmEntry(AlarmEntry alarmEntry) {
@@ -421,7 +420,7 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
         appDatabase.alarmDao().updateAlarm(alarmEntry);
     }
 
-    public static List<AlarmEntry> getAlarmEntries() {
+    public List<AlarmEntry> getAlarmEntries() {
         return mAlarmEntries;
     }
 
@@ -465,17 +464,19 @@ public class AlarmAdapter extends RecyclerView.Adapter<AlarmAdapter.AlarmViewHol
             }
 
             AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().insertAlarm(alarmEntry));
-            new AlarmInstance(mContext, alarmEntry);
+            // If alarm was on when deleted, reset it on undo
+            if (alarmEntry.isAlarmOn()) {
+                new AlarmInstance(mContext, alarmEntry);
+            }
         });
 
         AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().deleteAlarm(alarmEntry));
-
         snackbar.show();
-
+        
         if (alarmEntry.isAlarmOn()) {
             int alarmEntryId = alarmEntry.getId();
             AlarmInstance.cancelAlarm(mContext, alarmEntryId);
-            // Reset saved alarm time to 0
+            // Reset saved alarm time to 0 so that if delete action is undone and the alarm was on, it will be reset
             alarmEntry.setAlarmTimeInMillis(0);
         }
     }

@@ -30,6 +30,9 @@ import com.birdbathapps.HappyAlarmClock.adapters.EmptyRecyclerView;
 import com.birdbathapps.HappyAlarmClock.database.AlarmEntry;
 import com.birdbathapps.HappyAlarmClock.database.AppDatabase;
 import com.birdbathapps.HappyAlarmClock.viewmodels.MainViewModel;
+import com.google.android.material.snackbar.Snackbar;
+
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -37,13 +40,14 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         AlarmAdapter.RingtoneItemClickListener, AlarmAdapter.AlarmItemExpandClickListener, SetTimeFragment.TimeDialogListener {
 
     private static final String TIME_PICKER_FRAGMENT_ID = "time_picker";
-    private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
-    private static final String CLICKED_ALARM_POSITION_KEY = "clicked_alarm_position";
+    protected static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
+    protected static final String CLICKED_ALARM_TIME_KEY = "clicked_alarm_time";
     private static final String SAVED_EXPANDED_POSITION_KEY = "saved_expanded_position";
     private static final int RINGTONE_PICKER = 0;
 
     private AlarmAdapter alarmAdaptor;
     private AppDatabase appDatabase;
+    private EmptyRecyclerView recyclerView;
 
     private int clickedAlarmRingtonePosition;
     private int savedExpandedPosition = -1;
@@ -53,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         TextView emptyView = findViewById(R.id.tv_empty_view_main);
-        EmptyRecyclerView recyclerView = findViewById(R.id.recycler_view_main);
+        recyclerView = findViewById(R.id.recycler_view_main);
 
         if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_EXPANDED_POSITION_KEY)) {
             savedExpandedPosition = savedInstanceState.getInt(SAVED_EXPANDED_POSITION_KEY, -1);
@@ -126,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
             }
             if (ringtoneUri != null) {
                 String ringtonePath = ringtoneUri.toString();
-                AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(clickedAlarmRingtonePosition);
+                AlarmEntry alarmEntry = alarmAdaptor.getAlarmEntryFromAdapterPosition(clickedAlarmRingtonePosition);
                 alarmEntry.setRingtonePath(ringtonePath);
                 AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().updateAlarm(alarmEntry));
             } else {
@@ -136,9 +140,12 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
     }
 
     public void updateTimePickerDialog(int adapterPosition, int alarmEntryId) {
+        AlarmEntry alarmEntry = alarmAdaptor.getAlarmEntryFromAdapterPosition(adapterPosition);
+        String time = alarmEntry.getTime();
+
         DialogFragment setTimeFragment = new SetTimeFragment();
         Bundle bundle = new Bundle();
-        bundle.putInt(CLICKED_ALARM_POSITION_KEY, adapterPosition);
+        bundle.putString(CLICKED_ALARM_TIME_KEY, time);
         bundle.putInt(CLICKED_ALARM_ID_KEY, alarmEntryId);
         setTimeFragment.setArguments(bundle);
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -165,28 +172,56 @@ public class MainActivity extends AppCompatActivity implements AlarmAdapter.Alar
 
     @Override
     public void onFinishNewAlarm(String time) {
-        String defaultTone = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM).toString();
-        // daysRepeating represents {monday, tuesday, wednesday, thursday, friday, saturday, sunday}
-        boolean[] daysRepeating = {true,true,true,true,true,true,true};
-        final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false, false, false, daysRepeating, 0);
-        AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().insertAlarm(alarmEntry));
+        if (isAlarmTimeNew(time)) {
+            String defaultTone = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM).toString();
+            // daysRepeating represents {monday, tuesday, wednesday, thursday, friday, saturday, sunday}
+            boolean[] daysRepeating = {true, true, true, true, true, true, true};
+            final AlarmEntry alarmEntry = new AlarmEntry(time, defaultTone, false,
+                    false, false, daysRepeating, 0);
+            AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().insertAlarm(alarmEntry));
+        }
     }
 
     @Override
     public void onFinishUpdateAlarm(final String time, final int alarmEntryId) {
-        AppExecutors.getsInstance().diskIO().execute(() -> {
-            AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
-            alarmEntry.setTime(time);
+        if (isAlarmTimeNew(time)) {
+            AppExecutors.getsInstance().diskIO().execute(() -> {
+                AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
+                alarmEntry.setTime(time);
 
-            if (alarmEntry.isAlarmOn()) {
-                AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
-            } else {
-                alarmEntry.setAlarmOn(true);
+                if (alarmEntry.isAlarmOn()) {
+                    AlarmInstance.cancelAlarm(MainActivity.this, alarmEntryId);
+                } else {
+                    alarmEntry.setAlarmOn(true);
+                }
+
+                new AlarmInstance(MainActivity.this, alarmEntry);
+                appDatabase.alarmDao().updateAlarm(alarmEntry);
+            });
+        } else {
+            AppExecutors.getsInstance().diskIO().execute(() -> {
+                AlarmEntry alarmEntry = appDatabase.alarmDao().loadAlarmById(alarmEntryId);
+                appDatabase.alarmDao().deleteAlarm(alarmEntry);
+            });
+        }
+    }
+
+    private boolean isAlarmTimeNew(String time) {
+        List<AlarmEntry> alarmEntries = alarmAdaptor.getAlarmEntries();
+        boolean isAlarmTimeNew = true;
+        for (AlarmEntry alarmEntry : alarmEntries) {
+            if (alarmEntry.getTime().equals(time)) {
+                isAlarmTimeNew = false;
+                if (!alarmEntry.isAlarmOn()) {
+                    alarmEntry.setAlarmOn(true);
+                    AppExecutors.getsInstance().diskIO().execute(() -> appDatabase.alarmDao().updateAlarm(alarmEntry));
+                    new AlarmInstance(this, alarmEntry);
+                } else {
+                    Snackbar.make(recyclerView, "Alarm already set for " +  time + ".", Snackbar.LENGTH_LONG).show();
+                }
             }
-
-            new AlarmInstance(MainActivity.this, alarmEntry);
-            appDatabase.alarmDao().updateAlarm(alarmEntry);
-        });
+        }
+        return isAlarmTimeNew;
     }
 
     @Override

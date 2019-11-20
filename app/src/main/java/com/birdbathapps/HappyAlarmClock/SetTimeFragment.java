@@ -8,9 +8,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import android.widget.TimePicker;
 
-import com.birdbathapps.HappyAlarmClock.adapters.AlarmAdapter;
-import com.birdbathapps.HappyAlarmClock.database.AlarmEntry;
-
 import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.Locale;
@@ -20,23 +17,21 @@ public class SetTimeFragment extends DialogFragment implements TimePickerDialog.
     private int alarmEntryId;
     private boolean newAlarm = true;
 
-    private static final String CLICKED_ALARM_ID_KEY = "clicked_alarm_id";
-    private static final String CLICKED_ALARM_POSITION_KEY = "clicked_alarm_position";
-
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         int hour;
         int minute;
 
-        if (getArguments() != null && getArguments().containsKey(CLICKED_ALARM_ID_KEY) && getArguments().containsKey(CLICKED_ALARM_POSITION_KEY)) {
+        if (getArguments() != null && getArguments().containsKey(MainActivity.CLICKED_ALARM_ID_KEY)
+                && getArguments().containsKey(MainActivity.CLICKED_ALARM_TIME_KEY)) {
             newAlarm = false;
-
-            alarmEntryId = getArguments().getInt(CLICKED_ALARM_ID_KEY);
-            int adapterPosition = getArguments().getInt(CLICKED_ALARM_POSITION_KEY);
-            AlarmEntry alarmEntry = AlarmAdapter.getAlarmEntryFromAdapterPosition(adapterPosition);
-            String currentAlarmTime = alarmEntry.getTime();
-            String[] hoursAndMinutes = currentAlarmTime.split(":");
+            alarmEntryId = getArguments().getInt(MainActivity.CLICKED_ALARM_ID_KEY);
+            String currentAlarmTime = getArguments().getString(MainActivity.CLICKED_ALARM_TIME_KEY);
+            String[] hoursAndMinutes = new String[0];
+            if (currentAlarmTime != null) {
+                hoursAndMinutes = currentAlarmTime.split(":");
+            }
 
             hour = getAlarmHour(hoursAndMinutes);
             minute = getAlarmMinute(hoursAndMinutes);

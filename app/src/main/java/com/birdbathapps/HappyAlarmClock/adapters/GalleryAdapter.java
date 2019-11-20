@@ -20,8 +20,8 @@ import java.util.ArrayList;
 
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.GalleryViewHolder> {
 
-    private static final String GALLERY_POSITION_KEY = "photo_position";
     private static final int DETAIL_PHOTO_REQUEST = 1;
+    private final String GALLERY_POSITION_KEY = "photo_position";
 
     private Context context;
     private ArrayList<File> filesList;

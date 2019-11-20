@@ -32,7 +32,7 @@ public class GalleryActivity extends AppCompatActivity {
 
     private static final int DETAIL_PHOTO_REQUEST = 1;
     private static final int OPEN_CAMERA_REQUEST = 2;
-    private static final String CURRENT_POSITION_KEY = "current_position";
+    protected static final String CURRENT_POSITION_KEY = "current_position";
 
     private ArrayList<File> fileArrayList;
     private GalleryAdapter galleryAdapter;

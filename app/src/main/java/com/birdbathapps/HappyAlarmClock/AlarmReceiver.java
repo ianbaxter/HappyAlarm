@@ -20,6 +20,7 @@ import com.birdbathapps.HappyAlarmClock.utilities.AlarmUtils;
 import com.birdbathapps.HappyAlarmClock.utilities.NotificationUtils;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import timber.log.Timber;
 
@@ -59,9 +60,11 @@ public class AlarmReceiver extends BroadcastReceiver {
             vibrator.cancel();
             isVibrating = false;
         }
-        mediaPlayer.stop();
-        mediaPlayer.release();
-        mediaPlayer = null;
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
         if (countDownTimer != null) {
             countDownTimer.cancel();
         }
@@ -83,7 +86,8 @@ public class AlarmReceiver extends BroadcastReceiver {
             private void snooze(AlarmEntry alarmEntry) {
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
-                int snoozeTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_snooze_time_key), "5"));
+                int snoozeTime = Integer.parseInt(Objects.requireNonNull(sharedPreferences
+                        .getString(context.getString(R.string.pref_snooze_time_key), "5")));
                 String snoozedAlarmTime = AlarmUtils.snoozeAlarmTime(snoozeTime);
                 alarmEntry.setTime(snoozedAlarmTime);
                 new AlarmInstance(context, alarmEntry);
@@ -97,7 +101,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             @Override
             public void run() {
                 int alarmEntryId = intent.getIntExtra(ALARM_ENTRY_ID_KEY, 0);
-                AppDatabase mDb = AppDatabase.getInstance(context.getApplicationContext());
+                AppDatabase mDb = AppDatabase.getInstance(context);
                 AlarmEntry alarmEntry = mDb.alarmDao().loadAlarmById(alarmEntryId);
                 boolean isAlarmRepeating = alarmEntry.isAlarmRepeating();
                 if (isAlarmRepeating) {
@@ -191,7 +195,8 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     private void startAutoSilentTimer(Context context) {
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        int countdownTime = Integer.parseInt(sharedPreferences.getString(context.getString(R.string.pref_silence_time_key), "5"));
+        int countdownTime = Integer.parseInt(Objects.requireNonNull(sharedPreferences
+                .getString(context.getString(R.string.pref_silence_time_key), "5")));
         int countdownTimeInMillis = countdownTime * 1000 * 60;
 
         countDownTimer = new CountDownTimer(countdownTimeInMillis, countdownTimeInMillis) {
